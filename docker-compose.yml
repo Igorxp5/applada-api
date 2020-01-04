@@ -1,0 +1,33 @@
+version: '3.7'
+services:
+  applada-nginx:
+    image: nginx
+    container_name: applada-nginx
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx:/etc/nginx/conf.d/
+    depends_on:
+      - applada-api
+  applada-db:
+    image: postgres
+    container_name: applada-db
+    environment:
+      POSTGRES_DB: applada
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - /opt/applada-db:/var/lib/postgresql/data/pgdata
+    ports:
+      - '8001:5432'
+  applada-api:
+    container_name: applada-api
+    build: 
+      context: '.'
+    volumes:
+      - .:/applada-api/
+    expose:
+      - 80
+    depends_on:
+    - applada-db
