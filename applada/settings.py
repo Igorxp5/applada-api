@@ -70,7 +70,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'applada.wsgi.application'
-
+TEST_RUNNER = 'redgreenunittest.django.runner.RedGreenDiscoverRunner'
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases

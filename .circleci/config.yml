@@ -1,0 +1,19 @@
+version: 2.1
+jobs:
+  build:
+    docker: 
+      - image: igorxp5/applada-api:latest
+        name: applada-api
+        auth:
+          username: igorxp5
+          password: $DOCKERHUB_PASSWORD
+      - image: postgres
+        name: applada-db
+        environment:
+          POSTGRES_DB: applada
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+    steps:
+      - checkout
+      - run: pip install -r requirements.txt
+      - run: python manage.py test -d --no-input api_v1/tests/
