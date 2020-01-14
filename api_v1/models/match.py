@@ -23,13 +23,13 @@ class MatchCategory(Enum):
         return [category.value for category in MatchCategory]
     
 class Match(models.Model):
-    title = models.CharField(max_length=50, null=False)
+    title = models.CharField(max_length=50)
     description = models.CharField(max_length=255, null=True, blank=True)
     limit_participants = models.PositiveIntegerField(null=True, blank=True)
-    owner = models.ForeignKey(User, null=False, on_delete=models.CASCADE)
-    date = models.DateTimeField(null=False)
-    category = models.CharField(max_length=15, null=False, 
-                                default=None, choices=MatchCategory.choices())
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateTimeField()
+    category = models.CharField(max_length=15, default=None, 
+                                choices=MatchCategory.choices())
     updated_date = models.DateTimeField(auto_now=True)
     created_date = models.DateTimeField(auto_now_add=True)
     
@@ -38,13 +38,12 @@ class Match(models.Model):
         if limit_participants:
             subscriptions = MatchSubscription.objects.filter(match=self.id)
             if limit_participants < len(subscriptions):
-                raise ValidationError(code=1, 
-                                      message=_('Limit participants must be grater '
+                raise ValidationError(message=_('Limit participants must be grater '
                                                 'than current total participants'))
     
     def save(self, *args, **kwargs):
         self.full_clean()
-        super(Match, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
     
     @receiver(post_save, sender='api_v1.Match')
     def post_save(created, instance, **kwargs):

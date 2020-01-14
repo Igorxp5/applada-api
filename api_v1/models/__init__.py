@@ -1,4 +1,3 @@
-from .song import Song
-from .user import User
-from .match import Match, MatchCategory, \
-                   MatchSubscription, MatchChatMessage
+from .song import *
+from .user import *
+from .match import *

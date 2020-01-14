@@ -16,4 +16,4 @@ jobs:
     steps:
       - checkout
       - run: pip install -r requirements.txt
-      - run: python manage.py test -d --no-input api_v1/tests/
+      - run: python manage.py test -d --noinput api_v1/tests/
