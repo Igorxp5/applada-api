@@ -1,17 +1,25 @@
 from django.db import models
 from django.utils import timezone
 from django.db.utils import IntegrityError
+from django.utils.translation import gettext as _
 from django.contrib.auth.hashers import make_password, check_password
+from api_v1.translation import error_messages as e_
 
 
 class User(models.Model):
     PASSWORD_HASH_PREFIX = 'pbkdf2_sha256'
 
-    username = models.CharField(max_length=35, primary_key=True)
+    class Meta:
+        verbose_name = _('User')
+        verbose_name_plural = _('Users')
+
+    username = models.CharField(max_length=35, primary_key=True, 
+                                verbose_name=_('Username'), error_messages=e_('Username'))
     name = models.CharField(max_length=35, null=True, blank=True, default=None)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, verbose_name=_('Email'), error_messages=e_('Email'))
     level = models.PositiveIntegerField(default=1)
-    password_digest = models.CharField(max_length=65, default=None)  # PBKDF2 SHA256 Hash
+    password_digest = models.CharField(max_length=65, default=None, 
+                                       error_messages=e_('Password'))  # PBKDF2 SHA256 Hash
     registred_date = models.DateTimeField(default=timezone.now)
 
     def __repr__(self):

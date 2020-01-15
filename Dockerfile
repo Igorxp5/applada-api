@@ -1,6 +1,7 @@
 FROM python:3.7-slim
 
-RUN apt-get update -qq && apt-get -y install python-pip python-dev libpq-dev postgresql postgresql-contrib
+RUN apt-get update -qq && apt-get -y install python-pip python-dev \
+    libpq-dev postgresql postgresql-contrib gettext
 
 COPY . /applada-api
 

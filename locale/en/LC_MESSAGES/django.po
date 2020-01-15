@@ -1,0 +1,71 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: poedit\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-01-15 16:17-0300\n"
+"PO-Revision-Date: 2020-01-14 17:09\n"
+"Last-Translator: Igor Fernandes (igorxp5)\n"
+"Language-Team: Portuguese, Brazilian\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: api_v1/models/match.py:16
+msgid "Soccer"
+msgstr ""
+
+#: api_v1/models/match.py:17
+msgid "Voleyball"
+msgstr ""
+
+#: api_v1/models/match.py:18
+msgid "Basketball"
+msgstr ""
+
+#: api_v1/models/match.py:28
+msgid "Title"
+msgstr ""
+
+#: api_v1/models/match.py:33
+msgid "Date"
+msgstr ""
+
+#: api_v1/models/match.py:44
+msgid "Limit participants must be grater than current total participants"
+msgstr ""
+
+#: api_v1/models/user.py:13
+msgid "User"
+msgstr ""
+
+#: api_v1/models/user.py:14
+msgid "Users"
+msgstr ""
+
+#: api_v1/models/user.py:17
+msgid "Username"
+msgstr ""
+
+#: api_v1/models/user.py:19
+msgid "Email"
+msgstr ""
+
+#: api_v1/translation/__init__.py:7
+#, python-format
+msgid "%(label_name)s cannot be null"
+msgstr ""
+
+#: api_v1/translation/__init__.py:8
+#, python-format
+msgid "%(label_name)s cannot be empty"
+msgstr ""
+
+#: applada/settings.py:125
+msgid "English"
+msgstr ""
+
+#: applada/settings.py:126
+msgid "Português (Brasil)"
+msgstr ""

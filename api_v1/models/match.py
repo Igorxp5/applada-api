@@ -1,9 +1,11 @@
 from django.db import models
+from django.dispatch import receiver
+from django.db.models.signals import post_save
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+
+from api_v1.translation import error_messages as e_
 
 from enum import Enum
 
@@ -23,11 +25,12 @@ class MatchCategory(Enum):
         return [category.value for category in MatchCategory]
     
 class Match(models.Model):
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=50, verbose_name=_('Title'), 
+                             error_messages=e_('Title'))
     description = models.CharField(max_length=255, null=True, blank=True)
     limit_participants = models.PositiveIntegerField(null=True, blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    date = models.DateTimeField()
+    date = models.DateTimeField(verbose_name=_('Date'), error_messages=e_('Date'))
     category = models.CharField(max_length=15, default=None, 
                                 choices=MatchCategory.choices())
     updated_date = models.DateTimeField(auto_now=True)

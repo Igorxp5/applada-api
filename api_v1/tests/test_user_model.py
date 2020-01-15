@@ -1,7 +1,7 @@
 from django.test import TestCase
 from api_v1.models.user import User
 from django.core.exceptions import ValidationError
-
+from django.utils.translation import gettext as _
 
 class UserModelTestCase(TestCase):
     """User Model"""
@@ -12,8 +12,8 @@ class UserModelTestCase(TestCase):
             User.create_user(username='user', email='user@gmail.com', password=None)
         
         assert 'password_digest' in error.exception.message_dict, 'Password field is not in errors'
-        
-        self.assertEquals(error.exception.message_dict['password_digest'][0], 'This field cannot be null.')
+
+        self.assertEquals(error.exception.message_dict['password_digest'][0], 'Password cannot be null')
 
     def test_cant_create_user_without_email(self):
         """Create a new user without a email raises a ValidationError"""
@@ -22,7 +22,7 @@ class UserModelTestCase(TestCase):
         
         assert 'email' in error.exception.message_dict, 'Email field is not in errors'
         
-        self.assertEquals(error.exception.message_dict['email'][0], 'This field cannot be null.')
+        self.assertEquals(error.exception.message_dict['email'][0], 'Email cannot be null')
         
     def test_cant_create_two_users_with_same_username(self):
         """Create a new user with same username of other user already created raises a ValidationError"""
