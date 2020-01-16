@@ -1,1 +1,2 @@
-from .user import UserSerializer
+from .user import *
+from .credentials import *

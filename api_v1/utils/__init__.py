@@ -1,2 +1,1 @@
-from .error import *
-from .test import TestCase
+from .test import *

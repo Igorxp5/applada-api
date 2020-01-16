@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: poedit\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-01-16 13:05-0300\n"
+"POT-Creation-Date: 2020-01-16 17:30-0300\n"
 "PO-Revision-Date: 2020-01-14 17:09\n"
 "Last-Translator: Igor Fernandes (igorxp5)\n"
 "Language-Team: Portuguese, Brazilian\n"
@@ -36,21 +36,33 @@ msgstr ""
 msgid "Limit participants must be grater than current total participants"
 msgstr ""
 
-#: api_v1/models/user.py:13
+#: api_v1/models/user.py:12
 msgid "User"
 msgstr ""
 
-#: api_v1/models/user.py:14
+#: api_v1/models/user.py:13
 msgid "Users"
 msgstr ""
 
-#: api_v1/models/user.py:17
-msgid "Username"
+#: api_v1/models/user.py:16
+msgid "username"
 msgstr ""
 
 #: api_v1/models/user.py:19
+msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
+msgstr ""
+
+#: api_v1/models/user.py:23
 msgid "Email"
 msgstr ""
+
+#: api_v1/models/user.py:25
+msgid "password"
+msgstr ""
+
+#: api_v1/serializers/credentials.py:10
+msgid "No active account found with the given credentials"
+msgstr "User or password incorrect"
 
 #: api_v1/translation/__init__.py:7
 #, python-format
@@ -62,6 +74,11 @@ msgstr ""
 msgid "%(label_name)s cannot be empty"
 msgstr ""
 
-#: api_v1/views/users.py:23
+#: api_v1/translation/__init__.py:9
+#, python-format
+msgid "%(label_name)s is required"
+msgstr "%(label_name)s is required"
+
+#: api_v1/views/users.py:28
 msgid "User not found"
 msgstr ""

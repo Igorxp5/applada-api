@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: poedit\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-01-16 13:05-0300\n"
+"POT-Creation-Date: 2020-01-16 17:30-0300\n"
 "PO-Revision-Date: 2020-01-14 17:09\n"
 "Last-Translator: Igor Fernandes (igorxp5)\n"
 "Language-Team: Portuguese, Brazilian\n"
@@ -38,32 +38,52 @@ msgstr ""
 "Limite de participantes deve ser maior que quantidade total atual de "
 "participantes"
 
-#: api_v1/models/user.py:13
+#: api_v1/models/user.py:12
 msgid "User"
 msgstr "Usuário"
 
-#: api_v1/models/user.py:14
+#: api_v1/models/user.py:13
 msgid "Users"
 msgstr "Usuários"
 
-#: api_v1/models/user.py:17
-msgid "Username"
+#: api_v1/models/user.py:16
+#, fuzzy
+#| msgid "Username"
+msgid "username"
 msgstr "Usuário"
 
 #: api_v1/models/user.py:19
+msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
+msgstr ""
+"Obrigatório. 150 caracteres ou menos. Letras, digitos @/./+/-/_ somente."
+
+#: api_v1/models/user.py:23
 msgid "Email"
 msgstr "Email"
 
+#: api_v1/models/user.py:25
+msgid "password"
+msgstr "senha"
+
+#: api_v1/serializers/credentials.py:10
+msgid "No active account found with the given credentials"
+msgstr "Usuário ou senha incorreta"
+
 #: api_v1/translation/__init__.py:7
-#, fuzzy, python-format
+#, python-format
 msgid "%(label_name)s cannot be null"
 msgstr "%(label_name)s não pode ser nulo"
 
 #: api_v1/translation/__init__.py:8
-#, fuzzy, python-format
+#, python-format
 msgid "%(label_name)s cannot be empty"
 msgstr "%(label_name)s não pode ser vazio"
 
-#: api_v1/views/users.py:23
+#: api_v1/translation/__init__.py:9
+#, python-format
+msgid "%(label_name)s is required"
+msgstr "%(label_name)s é obrigatório"
+
+#: api_v1/views/users.py:28
 msgid "User not found"
 msgstr "Usuário não encontrado"

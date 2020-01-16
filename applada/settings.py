@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 
+from datetime import timedelta
+
 from django.utils.translation import ugettext_lazy as _
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -74,6 +76,10 @@ TEMPLATES = [
     },
 ]
 
+AUTH_USER_MODEL = 'api_v1.User'
+
+APPEND_SLASH = False
+
 WSGI_APPLICATION = 'applada.wsgi.application'
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
@@ -96,8 +102,15 @@ DATABASES = {
 # Rest Framework
 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'api_v1.utils.core_exception_handler',
-    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S'
+    'EXCEPTION_HANDLER': 'api_v1.core.core_exception_handler',
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15)
 }
 
 
