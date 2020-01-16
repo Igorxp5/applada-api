@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: poedit\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-01-15 16:17-0300\n"
+"POT-Creation-Date: 2020-01-16 13:05-0300\n"
 "PO-Revision-Date: 2020-01-14 17:09\n"
 "Last-Translator: Igor Fernandes (igorxp5)\n"
 "Language-Team: Portuguese, Brazilian\n"
@@ -62,10 +62,6 @@ msgstr ""
 msgid "%(label_name)s cannot be empty"
 msgstr ""
 
-#: applada/settings.py:125
-msgid "English"
-msgstr ""
-
-#: applada/settings.py:126
-msgid "Português (Brasil)"
+#: api_v1/views/users.py:23
+msgid "User not found"
 msgstr ""

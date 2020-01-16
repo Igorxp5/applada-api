@@ -53,6 +53,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
 ]
 
 ROOT_URLCONF = 'applada.urls'
@@ -129,8 +130,8 @@ LOCALE_PATHS = (
 LANGUAGE_CODE = 'en'
 
 LANGUAGES = (
-    ('en', _('English')),
-    ('pt-br', _('Português (Brasil)')),
+    ('en', 'English'),
+    ('pt-br', 'Português (Brasil)'),
 )
 
 TIME_ZONE = 'America/Sao_Paulo'
