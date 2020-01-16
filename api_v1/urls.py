@@ -1,7 +1,6 @@
-from django.urls import path
-from api_v1.views import SongsView
+from django.urls import path, include
 
 
 urlpatterns = [
-    path('songs/', SongsView.as_view(), name="songs-all")
+    path('', include('api_v1.urls'))
 ]

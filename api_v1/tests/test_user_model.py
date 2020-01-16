@@ -1,7 +1,8 @@
-from django.test import TestCase
+from api_v1.utils import TestCase
 from api_v1.models.user import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
+
 
 class UserModelTestCase(TestCase):
     """User Model"""

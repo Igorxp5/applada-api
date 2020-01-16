@@ -1,6 +1,4 @@
 from django.contrib import admin
-from api_v1.models import Song
+from api_v1.models import User
 
-# Register your models here.
-
-admin.site.register(Song)
+admin.site.register(User)
