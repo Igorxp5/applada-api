@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: poedit\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-01-16 17:30-0300\n"
+"POT-Creation-Date: 2020-01-17 23:48-0300\n"
 "PO-Revision-Date: 2020-01-14 17:09\n"
 "Last-Translator: Igor Fernandes (igorxp5)\n"
 "Language-Team: Portuguese, Brazilian\n"
@@ -12,73 +12,86 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: api_v1/models/match.py:16
+#: api_v1/core/errors.py:16
+#, python-format
+msgid "%s cannot be null"
+msgstr ""
+
+#: api_v1/core/errors.py:17
+#, python-format
+msgid "%s cannot be empty"
+msgstr ""
+
+#: api_v1/core/errors.py:18
+#, fuzzy, python-format
+#| msgid "%(label_name)s is required"
+msgid "%s is required"
+msgstr "%(label_name)s is required"
+
+#: api_v1/core/errors.py:33 api_v1/core/errors.py:51
+msgid "Resource or item not found"
+msgstr ""
+
+#: api_v1/core/permissions.py:15 api_v1/core/permissions.py:31
+msgid "You do not have permission to perform this action."
+msgstr ""
+
+#: api_v1/extra_translations.py:3
+msgid "Given token not valid for any token type"
+msgstr ""
+
+#: api_v1/extra_translations.py:4
+msgid "registred date"
+msgstr ""
+
+#: api_v1/models/match.py:14
 msgid "Soccer"
 msgstr ""
 
-#: api_v1/models/match.py:17
+#: api_v1/models/match.py:15
 msgid "Voleyball"
 msgstr ""
 
-#: api_v1/models/match.py:18
+#: api_v1/models/match.py:16
 msgid "Basketball"
 msgstr ""
 
-#: api_v1/models/match.py:28
+#: api_v1/models/match.py:26
 msgid "Title"
 msgstr ""
 
-#: api_v1/models/match.py:33
+#: api_v1/models/match.py:30
 msgid "Date"
 msgstr ""
 
-#: api_v1/models/match.py:44
+#: api_v1/models/match.py:41
 msgid "Limit participants must be grater than current total participants"
 msgstr ""
 
-#: api_v1/models/user.py:12
+#: api_v1/models/user.py:11
 msgid "User"
 msgstr ""
 
-#: api_v1/models/user.py:13
+#: api_v1/models/user.py:12
 msgid "Users"
 msgstr ""
 
-#: api_v1/models/user.py:16
-msgid "username"
-msgstr ""
-
-#: api_v1/models/user.py:19
-msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
-msgstr ""
-
-#: api_v1/models/user.py:23
+#: api_v1/models/user.py:14
 msgid "Email"
-msgstr ""
-
-#: api_v1/models/user.py:25
-msgid "password"
 msgstr ""
 
 #: api_v1/serializers/credentials.py:10
 msgid "No active account found with the given credentials"
 msgstr "User or password incorrect"
 
-#: api_v1/translation/__init__.py:7
-#, python-format
-msgid "%(label_name)s cannot be null"
+#: api_v1/serializers/user.py:24
+msgid "Provide old password"
 msgstr ""
 
-#: api_v1/translation/__init__.py:8
-#, python-format
-msgid "%(label_name)s cannot be empty"
+#: api_v1/serializers/user.py:26
+msgid "Wrong password"
 msgstr ""
 
-#: api_v1/translation/__init__.py:9
-#, python-format
-msgid "%(label_name)s is required"
-msgstr "%(label_name)s is required"
-
-#: api_v1/views/users.py:28
+#: api_v1/views/users.py:43
 msgid "User not found"
 msgstr ""

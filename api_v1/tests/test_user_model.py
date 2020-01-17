@@ -16,7 +16,7 @@ class UserModelTestCase(TestCase):
         
         assert 'email' in error.exception.message_dict, 'Email field is not in errors'
         
-        self.assertEquals(error.exception.message_dict['email'][0], 'Email cannot be empty')
+        self.assertEquals(error.exception.error_dict['email'][0].code, 'blank')
         
     def test_cant_create_two_users_with_same_username(self):
         """Create a new user with same username of other user already created raises a ValidationError"""
@@ -26,7 +26,7 @@ class UserModelTestCase(TestCase):
         
         assert 'username' in error.exception.message_dict, 'Username field is not in errors'
 
-        self.assertEquals(error.exception.message_dict['username'][0], 'User with this Username already exists.')
+        self.assertEquals(error.exception.error_dict['username'][0].code, 'unique')
 
     def test_cant_create_two_users_with_same_email(self):
         """Create a new user with same email of other user already created raises a ValidationError"""
@@ -35,8 +35,8 @@ class UserModelTestCase(TestCase):
             User.objects.create_user(username='user_2', email='user_1@gmail.com', password='4321')
         
         assert 'email' in error.exception.message_dict, 'Email field is not in errors'
-                
-        self.assertEquals(error.exception.message_dict['email'][0], 'User with this Email already exists.')
+
+        self.assertEquals(error.exception.error_dict['email'][0].code, 'unique')
 
     def test_find_user_created(self):
         """Find user after create it"""
