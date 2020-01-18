@@ -1,8 +1,6 @@
 from api_v1.utils import TestCase
 from api_v1.models.user import User
 
-from django.utils.translation import gettext as _
-
 from rest_framework.test import APIClient
 
 URL_PREFFIX = '/v1'
@@ -140,6 +138,26 @@ class UserEndpointTestCase(TestCase):
                                      {'name': new_name}, format='json', follow=True)
         self.assertEquals(response.status_code, 403)
         self.assertJSONContentType(response)
+    
+    def test_cant_edit_username(self):
+        """PATCH /users/{username}: User should not be able to change username"""
+        test_user = self._create_test_user()
+        self.client.force_authenticate(user=test_user)
+        new_username = 'new_username'
+        response = self.client.patch(f'{URL_PREFFIX}/users/{test_user.username}', 
+                                     {'username': new_username}, format='json', follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertJSONContentType(response)
+        self.assertEquals(response.json()['username'], test_user.username)
+    
+    def test_user_cant_set_blank_name(self):
+        """PATCH /users/{username}: User should not be able to set blank name"""
+        test_user = self._create_test_user()
+        self.client.force_authenticate(user=test_user)
+        response = self.client.patch(f'{URL_PREFFIX}/users/{test_user.username}', 
+                                     {'name': ''}, format='json', follow=True)
+        self.assertEquals(response.status_code, 400)
+        self.assertJSONEqual(response, {'errors': ['Name cannot be empty']})
     
     def test_change_user_password(self):
         """PATCH /users/{username}: To change user password, need provide old password"""

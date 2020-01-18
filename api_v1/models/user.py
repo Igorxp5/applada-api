@@ -11,7 +11,9 @@ class User(AbstractUser):
         verbose_name = _('User')
         verbose_name_plural = _('Users')
 
-    email = models.EmailField(_('Email'), unique=True)
+    first_name = models.CharField(_('name'), max_length=30, 
+                                  blank=True, null=True, default=None)
+    email = models.EmailField(_('email'), unique=True)
     level = models.PositiveIntegerField(default=1)
 
     def __repr__(self):
