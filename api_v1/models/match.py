@@ -1,9 +1,12 @@
 from django.db import models
+from django.utils import timezone
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
+from django.contrib.gis.db import models as gis_models
+from django.contrib.gis.geos import Point
 
 from enum import Enum
 
@@ -21,17 +24,56 @@ class MatchCategory(Enum):
     @staticmethod
     def choices():
         return [category.value for category in MatchCategory]
+
+
+class MatchStatus(Enum):
+    ON_HOLD = 'on_hold', lambda now, duration: dict(date__lt=now)
+    ON_GOING = 'on_going', lambda now, duration: dict(date__range=(now, now + duration))
+    FINISHED = 'finished', lambda now, duration: dict(date__gte=now)
+
+    def __new__(cls, value, queryset_filter):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.queryset_filter = queryset_filter
+        return obj
+
+    def __str__(self):
+        return str(self.value)
     
-class Match(models.Model):
-    title = models.CharField(_('Title'), max_length=50)
-    description = models.CharField(max_length=255, null=True, blank=True)
-    limit_participants = models.PositiveIntegerField(null=True, blank=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    date = models.DateTimeField(_('Date'))
-    category = models.CharField(max_length=15, default=None, 
+    def get_queryset_filter(self):
+        return self.queryset_filter(timezone.now())
+
+    @staticmethod
+    def get_match_status(match):
+        today = timezone.now()
+        if today < match.date:
+            return MatchStatus.ON_HOLD
+        elif today >= match.date < match.date + match.duration:
+            return MatchStatus.ON_GOING
+        return MatchStatus.FINISHED
+
+
+
+class Match(gis_models.Model):
+    title = gis_models.CharField(_('title'), max_length=50)
+    description = gis_models.CharField(_('description'), max_length=255, null=True, blank=True)
+    limit_participants = gis_models.PositiveIntegerField(_('limit participants'), null=True, blank=True)
+    owner = gis_models.ForeignKey(User, on_delete=gis_models.CASCADE)
+    duration = gis_models.DurationField(_('duration'))
+    location = gis_models.PointField(_('location'))
+    date = gis_models.DateTimeField(_('date'))
+    category = gis_models.CharField(_('category'), max_length=15, default=None, 
                                 choices=MatchCategory.choices())
-    updated_date = models.DateTimeField(auto_now=True)
-    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = gis_models.DateTimeField(auto_now=True)
+    created_date = gis_models.DateTimeField(auto_now_add=True)
+
+    @property
+    def latitude(self):
+        return self.location.y
+    
+    @property
+    def longitude(self):
+        return self.location.x
     
     def clean(self):
         limit_participants = self.limit_participants

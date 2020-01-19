@@ -1,13 +1,13 @@
 version: 2.1
 jobs:
-  build:
+  test:
     docker: 
       - image: igorxp5/applada-api:latest
         name: applada-api
         auth:
           username: igorxp5
           password: $DOCKERHUB_PASSWORD
-      - image: postgres
+      - image: kartoza/postgis
         name: applada-db
         environment:
           POSTGRES_DB: applada
@@ -16,4 +16,10 @@ jobs:
     steps:
       - checkout
       - run: pip install -r requirements.txt
-      - run: python manage.py test -d --noinput api_v1/tests/
+      - run: /bin/wait-for applada-db:5432
+      - run: python manage.py test -d --noinput api_v1/tests/*
+workflows:
+  version: 2
+  workflow:
+    jobs:
+      - test

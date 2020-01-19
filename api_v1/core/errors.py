@@ -40,8 +40,13 @@ def core_exception_handler(exc, context=None):
     if isinstance(exc, ValidationError) or isinstance(exc, django.core.exceptions.ValidationError):
         errors = getattr(exc, 'detail', None)
         errors = errors if errors else exc.args[0] 
-        if errors:  
-            response.data = {'errors': [__translate_error(f, e) for f, ers in errors.items() for e in ers]}
+        if isinstance(errors, str):
+            response.data = {'errors': [errors]}
+        elif isinstance(errors, list) or isinstance(errors, tuple):
+            response.data = {'errors': errors}
+        else:
+            if errors:
+                response.data = {'errors': [__translate_error(f, e) for f, ers in errors.items() for e in ers]}
 
     if response.status_code >= 400 and 'detail' in response.data:
         response.data = {'errors': [response.data['detail']]}

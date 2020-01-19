@@ -17,7 +17,7 @@ class User(AbstractUser):
     level = models.PositiveIntegerField(default=1)
 
     def __repr__(self):
-        return f'User(username={repr(self.username)}, name={repr(self.name)}, ' \
+        return f'User(username={repr(self.username)}, name={repr(self.first_name)}, ' \
                f'email={repr(self.email)}, level={repr(self.level)})'
     
     def save(self, *args, **kwargs):

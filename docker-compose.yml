@@ -10,7 +10,7 @@ services:
     depends_on:
       - applada-api
   applada-db:
-    image: postgres
+    image: kartoza/postgis
     container_name: applada-db
     environment:
       POSTGRES_DB: applada
@@ -25,6 +25,7 @@ services:
     container_name: applada-api
     build: 
       context: '.'
+    command: sh -c '/bin/wait-for applada-db:5432 -- python manage.py migrate && python manage.py runserver 0.0.0.0:80'
     volumes:
       - .:/applada-api/
     expose:

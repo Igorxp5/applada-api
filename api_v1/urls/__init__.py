@@ -1,6 +1,7 @@
-from .users import urlpatterns as user_urls
+from .users import urlpatterns as users_urls
+from .matches import urlpatterns as matches_urls
 from .credentials import urlpatterns as credentials_urls
 
 urlpatterns = [
-    *user_urls, *credentials_urls
+    *users_urls, *matches_urls, *credentials_urls
 ]

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django.contrib.gis',
     'api_v1'
 ]
 
@@ -90,7 +91,7 @@ NOSE_ARGS = ['--with-spec', '--spec-color', '--rednose']
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'applada',
         'USER': 'postgres',
         'PASSWORD': 'postgres',
