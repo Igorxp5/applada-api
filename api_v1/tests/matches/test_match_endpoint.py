@@ -39,7 +39,7 @@ class MatchEndpointTestCase(TestCase):
         self.assertJSONEqual(response, {'errors':['Match not found']})
     
     def test_get_match_structure(self):
-        """GET /matches/{id}: Get a match should return correct match structure"""        
+        """GET /matches/{id}: Get a match should return correct match structure"""
         test_user = self._create_test_user()
         test_match = self._create_test_match(test_user)
         self.client.force_authenticate(user=test_user)
