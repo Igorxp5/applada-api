@@ -28,7 +28,7 @@ class SearchMatchEndpointTestCase(TestCase):
     def test_search_match_pagination(self):
         """GET /matches: Should return pagination fields (count, next, previous and results)"""
         test_user = self._create_test_user()
-        test_match = self._create_test_match(test_user)
+        test_match = self._create_test_match(owner=test_user)
         self.client.force_authenticate(user=test_user)
         lat, lon, rad = -8.0651966, -34.944717, 15
         url = f'{URL_PREFFIX}/matches?latitude={lat}&longitude={lon}&radius={rad}'
@@ -42,7 +42,7 @@ class SearchMatchEndpointTestCase(TestCase):
         self.client.force_authenticate(user=test_user)
         
         lat, lon, rad = -8.0651966, -34.944717, 15
-        test_match = self._create_test_match(test_user, lat, lon)
+        test_match = self._create_test_match(owner=test_user, latitude=lat, longitude=lon)
         far_away = -7.890995,-34.91361
         
         url = f'{URL_PREFFIX}/matches?latitude={far_away[0]}&longitude={far_away[1]}&radius={rad}'
@@ -150,7 +150,10 @@ class SearchMatchEndpointTestCase(TestCase):
         
         total_matches = 25
         for i in range(total_matches):
-            self._create_test_match(test_user, lat, lon, timezone.now() + timedelta(days=i + 1))
+            self._create_test_match(owner=test_user, 
+                                    latitude=lat, 
+                                    longitude=lon, 
+                                    date=timezone.now() + timedelta(days=i + 1))
 
         url = f'{URL_PREFFIX}/matches?latitude={lat}&longitude={lon}&radius={rad}'        
         response = self.client.get(url, follow=True)
@@ -195,8 +198,11 @@ class SearchMatchEndpointTestCase(TestCase):
         
         total_matches = 25
         for i in range(total_matches):
-            self._create_test_match(test_user, lat, lon, 
-                                    timezone.now() + timedelta(days=i + 1), title=f'Match title {i}')
+            self._create_test_match(owner=test_user, 
+                                    latitude=lat, 
+                                    longitude=lon,
+                                    title=f'Match title {i}',
+                                    date=timezone.now() + timedelta(days=i + 1))
 
         limit, offset = 10, 15
         url = f'{URL_PREFFIX}/matches?latitude={lat}&longitude={lon}&radius={rad}&offset={offset}&limit={limit}'        
@@ -213,15 +219,14 @@ class SearchMatchEndpointTestCase(TestCase):
     def _create_test_user(self):
         return User.objects.create_user(username='whatever', email='whatever@gmail.com', password='1234')
     
-    def _create_test_match(self, owner, latitude=-8.0651966, longitude=-34.944717, 
-                           date=None, title='Match title'):
+    def _create_test_match(self, **kwargs):
         match_properties = {
-            'title': title,
-            'description': 'a description',
-            'location': Point(longitude, latitude),
-            'date': date or (timezone.now() + timedelta(days=5)),
-            'duration': timedelta(hours=1),
-            'owner': owner,
-            'category': str(MatchCategory.SOCCER)
+            'title': kwargs.get('title', 'Match title'),
+            'description': kwargs.get('description', 'a description'),
+            'location': Point(kwargs.get('longitude', -34.944717), kwargs.get('latitude', -8.0651966)),
+            'date': kwargs.get('date', timezone.now() + timedelta(days=5)),
+            'duration': kwargs.get('duration', timedelta(hours=1)),
+            'owner': kwargs.get('owner'),
+            'category': kwargs.get('category', str(MatchCategory.SOCCER))
         }
         return Match.objects.create(**match_properties)

@@ -2,13 +2,15 @@ from django.db import models
 from django.utils import timezone
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.contrib.gis.db import models as gis_models
 from django.contrib.gis.geos import Point
 
+from rest_framework.exceptions import ValidationError
+
 from enum import Enum
+from datetime import timedelta
 
 from . import User
 
@@ -48,7 +50,7 @@ class MatchStatus(Enum):
         today = timezone.now()
         if today < match.date:
             return MatchStatus.ON_HOLD
-        elif today >= match.date < match.date + match.duration:
+        elif today >= match.date and today < match.date + match.duration:
             return MatchStatus.ON_GOING
         return MatchStatus.FINISHED
 
@@ -76,22 +78,27 @@ class Match(gis_models.Model):
         return self.location.x
     
     def clean(self):
-        limit_participants = self.limit_participants
-        if limit_participants:
+        if self.limit_participants:
             subscriptions = MatchSubscription.objects.filter(match=self.id)
-            if limit_participants < len(subscriptions):
-                raise ValidationError(message=_('Limit participants must be grater '
-                                                'than current total participants'))
-    
+            if self.limit_participants < len(subscriptions):
+                raise ValidationError(_('Limit participants must be grater '
+                                        'than current total participants'))
+        if self.date and self.date < timezone.now():
+            raise ValidationError(_('Match date cannot be in the past'))
+        
+        if self.date and self.date < (timezone.now() + timedelta(hours=1)):
+            raise ValidationError(_('Match date must be at least one hour longer than now'))
+        
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
     
+    @staticmethod
     @receiver(post_save, sender='api_v1.Match')
     def post_save(created, instance, **kwargs):
         # Create owner's match subscription always a match is created
         if created:
-            MatchSubscription(match=instance, user=instance.owner).save()
+            MatchSubscription.objects.create(match=instance, user=instance.owner)
 
 
 class MatchSubscription(models.Model):

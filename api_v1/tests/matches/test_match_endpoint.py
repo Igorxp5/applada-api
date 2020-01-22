@@ -7,6 +7,8 @@ from django.contrib.gis.geos import Point
 
 from rest_framework.test import APIClient
 
+import time
+import unittest.mock as mock
 from datetime import timedelta
 
 URL_PREFFIX = '/v1'
@@ -22,7 +24,6 @@ class MatchEndpointTestCase(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        settings.DEBUG = True
     
     def test_not_authenticated_get_match(self):
         """GET /matches/{id}: Non-Authenticated request should return 401 response code and appropriate error message"""
@@ -41,7 +42,7 @@ class MatchEndpointTestCase(TestCase):
     def test_get_match_structure(self):
         """GET /matches/{id}: Get a match should return correct match structure"""        
         test_user = self._create_test_user()
-        test_match = self._create_test_match(test_user)
+        test_match = self._create_test_match(owner=test_user)
         self.client.force_authenticate(user=test_user)
         response = self.client.get(f'{URL_PREFFIX}/matches/{test_match.id}', follow=True)
         expected_data = {'title': test_match.title, 
@@ -59,7 +60,7 @@ class MatchEndpointTestCase(TestCase):
         """PATCH /matches/{id}: A match can be updated only by the owner's it"""
         test_user = self._create_test_user()
         other_user = User.objects.create_user(username='other', email='other@gmail.com', password='1234')
-        test_match = self._create_test_match(test_user)
+        test_match = self._create_test_match(owner=test_user)
         self.client.force_authenticate(user=other_user)
         response = self.client.patch(f'{URL_PREFFIX}/matches/{test_match.id}', 
                                    {'title': 'New title'}, format='json', follow=True)
@@ -79,7 +80,7 @@ class MatchEndpointTestCase(TestCase):
             'title': 'Match title',
             'description': 'a description',
             'location': {'latitude': -8.0651966, 'longitude': -34.944717},
-            'date': '2020-01-25 10:00:00',
+            'date': timezone.now() + timedelta(days=5),
             'duration': '01:00:00',
             'category': str(MatchCategory.SOCCER)
         }
@@ -89,28 +90,92 @@ class MatchEndpointTestCase(TestCase):
         self.assertJSONContains(response, self.expected_structure)
     
     def test_match_owner_cant_be_edited(self):
-        """PATCH /maches/{id}: Match owner should not be changed"""
+        """PATCH /matches/{id}: Match owner should not be changed"""
         test_user = self._create_test_user()
         other_user = User.objects.create_user(username='other', email='other@gmail.com', password='1234')
         self.client.force_authenticate(user=test_user)
-        test_match = self._create_test_match(test_user)
+        test_match = self._create_test_match(owner=test_user)
         response = self.client.patch(f'{URL_PREFFIX}/matches/{test_match.id}', 
                                     {'owner': other_user.username}, format='json', follow=True)
         self.assertEquals(response.status_code, 200)
         self.assertEquals(response.json()['owner'], test_user.username)
+
+    def test_match_status(self):
+        """GET /matches/{id}: Status value should be based on match date and match duration"""
+        test_user = self._create_test_user()
+        
+
+        self.client.force_authenticate(user=test_user)
+        test_match = self._create_test_match(owner=test_user)
+        response = self.client.get(f'{URL_PREFFIX}/matches/{test_match.id}', follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.json()['status'], 'on_hold')
+        
+        testtime = timezone.now() - timedelta(days=1)
+        with mock.patch('django.utils.timezone.now') as mock_now:
+            mock_now.return_value = testtime
+            test_match = self._create_test_match(owner=test_user,
+                                                 date=(timezone.now() + timedelta(days=1)))
+        
+        response = self.client.get(f'{URL_PREFFIX}/matches/{test_match.id}', follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.json()['status'], 'on_going')
+
+        testtime = timezone.now() - timedelta(days=1)
+        with mock.patch('django.utils.timezone.now') as mock_now:
+            mock_now.return_value = testtime
+            test_match = self._create_test_match(owner=test_user,
+                                                 date=(timezone.now() + timedelta(hours=2)))
+        
+        response = self.client.get(f'{URL_PREFFIX}/matches/{test_match.id}', follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.json()['status'], 'finished')
+    
+    def test_cant_create_match_in_past(self):
+        """POST /matches: User cant create a match in the past"""
+        test_user = self._create_test_user()
+        self.client.force_authenticate(user=test_user)
+        match_properties = {
+            'title': 'Match title',
+            'description': 'a description',
+            'location': {'latitude': -8.0651966, 'longitude': -34.944717},
+            'date': timezone.now() - timedelta(days=1),
+            'duration': '01:00:00',
+            'category': str(MatchCategory.SOCCER)
+        }
+        response = self.client.post(f'{URL_PREFFIX}/matches', 
+                                    match_properties, format='json', follow=True)
+        self.assertEquals(response.status_code, 400)
+        self.assertJSONEqual(response, {'errors': ['Match date cannot be in the past']})
+    
+    def test_cant_create_match_longer_than_one_hour(self):
+        """POST /matches: Match date must be at least one hour longer than current time"""
+        test_user = self._create_test_user()
+        self.client.force_authenticate(user=test_user)
+        match_properties = {
+            'title': 'Match title',
+            'description': 'a description',
+            'location': {'latitude': -8.0651966, 'longitude': -34.944717},
+            'date': timezone.now() + timedelta(minutes=30),
+            'duration': '01:00:00',
+            'category': str(MatchCategory.SOCCER)
+        }
+        response = self.client.post(f'{URL_PREFFIX}/matches', 
+                                    match_properties, format='json', follow=True)
+        self.assertEquals(response.status_code, 400)
+        self.assertJSONEqual(response, {'errors': ['Match date must be at least one hour longer than now']})
     
     def _create_test_user(self):
         return User.objects.create_user(username='whatever', email='whatever@gmail.com', password='1234')
     
-    def _create_test_match(self, owner, latitude=-8.0651966, longitude=-34.944717, 
-                           date=None, title='Match title'):
+    def _create_test_match(self, **kwargs):
         match_properties = {
-            'title': title,
-            'description': 'a description',
-            'location': Point(longitude, latitude),
-            'date': date or (timezone.now() + timedelta(days=5)),
-            'duration': timedelta(hours=1),
-            'owner': owner,
-            'category': str(MatchCategory.SOCCER)
+            'title': kwargs.get('title', 'Match title'),
+            'description': kwargs.get('description', 'a description'),
+            'location': Point(kwargs.get('longitude', -34.944717), kwargs.get('latitude', -8.0651966)),
+            'date': kwargs.get('date', timezone.now() + timedelta(days=5)),
+            'duration': kwargs.get('duration', timedelta(hours=1)),
+            'owner': kwargs.get('owner'),
+            'category': kwargs.get('category', str(MatchCategory.SOCCER))
         }
         return Match.objects.create(**match_properties)
