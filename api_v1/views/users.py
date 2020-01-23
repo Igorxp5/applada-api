@@ -1,7 +1,7 @@
 from django.http.response import Http404
 from django.utils.translation import gettext as _
 
-from rest_framework import generics, filters
+from rest_framework import generics, filters, status
 from rest_framework.pagination import LimitOffsetPagination
 
 from api_v1.models import User
@@ -14,7 +14,6 @@ class UsersSearch(generics.ListAPIView):
     queryset = User.objects.filter(is_staff=False)
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated,)
-    pagination_class = LimitOffsetPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ['username', 'first_name']
 
@@ -28,7 +27,7 @@ class UserRetrieveUpdate(generics.RetrieveUpdateAPIView):
 
     def handle_exception(self, exc):
         response = super().handle_exception(exc)
-        if isinstance(exc, Http404):
+        if response.status_code == status.HTTP_404_NOT_FOUND:
             response.data['errors'] = [_('User not found')]
         return response
 

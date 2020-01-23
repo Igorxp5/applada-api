@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: poedit\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-01-17 23:48-0300\n"
+"POT-Creation-Date: 2020-01-23 15:00-0300\n"
 "PO-Revision-Date: 2020-01-14 17:09\n"
 "Last-Translator: Igor Fernandes (igorxp5)\n"
 "Language-Team: Portuguese, Brazilian\n"
@@ -12,26 +12,31 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: api_v1/core/errors.py:16
+#: api_v1/core/errors.py:18
 #, python-format
 msgid "%s cannot be null"
 msgstr "%s não pode ser nulo"
 
-#: api_v1/core/errors.py:17
+#: api_v1/core/errors.py:19
 #, python-format
 msgid "%s cannot be empty"
 msgstr "%s não pode ser vazio"
 
-#: api_v1/core/errors.py:18
+#: api_v1/core/errors.py:20
 #, python-format
 msgid "%s is required"
 msgstr "%s é obrigatório"
 
-#: api_v1/core/errors.py:33 api_v1/core/errors.py:51
+#: api_v1/core/errors.py:31
+msgid "Bad input parameters"
+msgstr ""
+
+#: api_v1/core/errors.py:71
 msgid "Resource or item not found"
 msgstr "Recurso ou item não encontrado"
 
 #: api_v1/core/permissions.py:15 api_v1/core/permissions.py:31
+#: api_v1/core/permissions.py:48
 msgid "You do not have permission to perform this action."
 msgstr "Você não tem permissão para realizar esta ação"
 
@@ -43,31 +48,77 @@ msgstr "Forneça um token válido"
 msgid "registred date"
 msgstr "data de registro"
 
-#: api_v1/models/match.py:14
+#: api_v1/extra_translations.py:5
+msgid "Match subscription with this Match and User already exists."
+msgstr ""
+
+#: api_v1/filters/match.py:45
+msgid "Choose a valid status value"
+msgstr ""
+
+#: api_v1/models/match.py:19
 msgid "Soccer"
 msgstr "Futebol"
 
-#: api_v1/models/match.py:15
+#: api_v1/models/match.py:20
 msgid "Voleyball"
 msgstr "Vôlei"
 
-#: api_v1/models/match.py:16
+#: api_v1/models/match.py:21
 msgid "Basketball"
 msgstr "Basquete"
 
-#: api_v1/models/match.py:26
-msgid "Title"
+#: api_v1/models/match.py:60
+#, fuzzy
+#| msgid "Title"
+msgid "title"
 msgstr "Título"
 
-#: api_v1/models/match.py:30
-msgid "Date"
-msgstr "Data"
+#: api_v1/models/match.py:61
+msgid "description"
+msgstr ""
 
-#: api_v1/models/match.py:41
+#: api_v1/models/match.py:62
+msgid "limit participants"
+msgstr ""
+
+#: api_v1/models/match.py:64
+msgid "duration"
+msgstr ""
+
+#: api_v1/models/match.py:65
+msgid "location"
+msgstr ""
+
+#: api_v1/models/match.py:66
+msgid "date"
+msgstr ""
+
+#: api_v1/models/match.py:67
+msgid "category"
+msgstr ""
+
+#: api_v1/models/match.py:92
 msgid "Limit participants must be grater than current total participants"
 msgstr ""
 "Limite de participantes deve ser maior que quantidade total atual de "
 "participantes"
+
+#: api_v1/models/match.py:95
+msgid "Match date cannot be in the past"
+msgstr ""
+
+#: api_v1/models/match.py:98
+msgid "Match date must be at least one hour longer than now"
+msgstr ""
+
+#: api_v1/models/match.py:101
+msgid "Finished match cannot be edited"
+msgstr ""
+
+#: api_v1/models/match.py:126
+msgid "You cannot subscribe for a finished match"
+msgstr ""
 
 #: api_v1/models/user.py:11
 msgid "User"
@@ -78,21 +129,53 @@ msgid "Users"
 msgstr "Usuários"
 
 #: api_v1/models/user.py:14
-msgid "Email"
+msgid "name"
+msgstr ""
+
+#: api_v1/models/user.py:16
+#, fuzzy
+#| msgid "Email"
+msgid "email"
 msgstr "Email"
 
 #: api_v1/serializers/credentials.py:10
 msgid "No active account found with the given credentials"
 msgstr "Usuário ou senha incorreta"
 
-#: api_v1/serializers/user.py:24
+#: api_v1/serializers/user.py:36
 msgid "Provide old password"
 msgstr "Forneça a senha antiga"
 
-#: api_v1/serializers/user.py:26
+#: api_v1/serializers/user.py:38
 msgid "Wrong password"
 msgstr "Senha incorreta"
 
-#: api_v1/views/users.py:43
+#: api_v1/utils/validation.py:22
+msgid "Invalid geo coordinates"
+msgstr ""
+
+#: api_v1/utils/validation.py:29
+msgid "Radius must be a value from 1 to 15"
+msgstr ""
+
+#: api_v1/utils/validation.py:40
+#, python-format
+msgid "%(label_name)s must be a float number"
+msgstr ""
+
+#: api_v1/views/matches.py:26 api_v1/views/matches.py:85
+#, fuzzy
+#| msgid "User not found"
+msgid "Match not found"
+msgstr "Usuário não encontrado"
+
+#: api_v1/views/matches.py:59 api_v1/views/users.py:31
 msgid "User not found"
 msgstr "Usuário não encontrado"
+
+#: api_v1/views/matches.py:82
+msgid "You already registered in this match"
+msgstr ""
+
+#~ msgid "Date"
+#~ msgstr "Data"
