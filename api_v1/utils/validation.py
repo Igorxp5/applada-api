@@ -9,7 +9,8 @@ def validate_required_params(params, required_params):
     params = deepcopy(params)
     missing_params = [p for p in required_params if p not in params]
     if missing_params:
-        raise ValidationError({p: [ValidationError(p, code='required')] for p in missing_params})
+        raise ValidationError({p: ValidationError(_('%(field_label)s is required'), code='required', 
+                                                 params={'field_label': p}) for p in missing_params})
     return params
 
 def validate_location(location_dict):

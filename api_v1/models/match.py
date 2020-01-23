@@ -48,12 +48,12 @@ class MatchStatus(Enum):
     @staticmethod
     def get_match_status(match):
         today = timezone.now()
-        if today < match.date:
-            return MatchStatus.ON_HOLD
-        elif today >= match.date and today < match.date + match.duration:
-            return MatchStatus.ON_GOING
-        return MatchStatus.FINISHED
-
+        if match._current_date:
+            if today >= match._current_date and today < match._current_date + match.duration:
+                return MatchStatus.ON_GOING
+            elif today >= match._current_date + match.duration:
+                return MatchStatus.FINISHED
+        return MatchStatus.ON_HOLD
 
 
 class Match(gis_models.Model):
@@ -69,6 +69,10 @@ class Match(gis_models.Model):
     updated_date = gis_models.DateTimeField(auto_now=True)
     created_date = gis_models.DateTimeField(auto_now_add=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._current_date = self.date
+
     @property
     def latitude(self):
         return self.location.y
@@ -76,13 +80,23 @@ class Match(gis_models.Model):
     @property
     def longitude(self):
         return self.location.x
+
+    @property
+    def status(self):
+        return MatchStatus.get_match_status(self)
     
     def clean(self):
+        # If self.id is not None, the match is an object already created in db, 
+        # so the user is performing an update operation.
+        if self.id and self.status == MatchStatus.FINISHED:
+            raise ValidationError(_('Finished match cannot be edited'))
+
         if self.limit_participants:
             subscriptions = MatchSubscription.objects.filter(match=self.id)
             if self.limit_participants < len(subscriptions):
                 raise ValidationError(_('Limit participants must be grater '
                                         'than current total participants'))
+        
         if self.date and self.date < timezone.now():
             raise ValidationError(_('Match date cannot be in the past'))
         
@@ -107,7 +121,15 @@ class MatchSubscription(models.Model):
 
     match = models.ForeignKey(Match, null=False, on_delete=models.CASCADE)
     user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)
-    created_date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        if self.match and self.match.status == MatchStatus.FINISHED:
+            raise ValidationError(_('You cannot subscribe for a finished match'))
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class MatchChatMessage(models.Model):

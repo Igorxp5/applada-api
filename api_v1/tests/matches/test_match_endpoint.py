@@ -1,5 +1,5 @@
 from api_v1.utils import TestCase
-from api_v1.models import User, Match, MatchCategory
+from api_v1.models import User, Match, MatchSubscription, MatchCategory
 
 from django.conf import settings
 from django.utils import timezone
@@ -164,6 +164,94 @@ class MatchEndpointTestCase(TestCase):
                                     match_properties, format='json', follow=True)
         self.assertEquals(response.status_code, 400)
         self.assertJSONEqual(response, {'errors': ['Match date must be at least one hour longer than now']})
+    
+    def test_delete_match(self):
+        """DELETE /matches/{id}: Owner can delete own match"""
+        test_user = self._create_test_user()
+        self.client.force_authenticate(user=test_user)
+        test_match = self._create_test_match(owner=test_user)
+        response = self.client.get(f'{URL_PREFFIX}/matches/{test_match.id}', follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertJSONContains(response, self.expected_structure)
+        response = self.client.delete(f'{URL_PREFFIX}/matches/{test_match.id}', follow=True)
+        self.assertEquals(response.status_code, 204)
+        response = self.client.get(f'{URL_PREFFIX}/matches/{test_match.id}', follow=True)
+        self.assertEquals(response.status_code, 404)
+        self.assertJSONEqual(response, {'errors':['Match not found']})
+    
+    def test_other_user_cant_delete_match(self):
+        """DELETE /matches/{id}: Match can be only be deleted by match owner"""
+        test_user = self._create_test_user()
+        other_user = User.objects.create_user(username='other', email='other@gmail.com', password='1234')
+        self.client.force_authenticate(user=other_user)
+        test_match = self._create_test_match(owner=test_user)
+        response = self.client.get(f'{URL_PREFFIX}/matches/{test_match.id}', follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertJSONContains(response, self.expected_structure)
+        response = self.client.delete(f'{URL_PREFFIX}/matches/{test_match.id}', follow=True)
+        self.assertEquals(response.status_code, 403)
+        self.assertJSONEqual(response, {'errors': ['You do not have permission to perform this action.']})
+
+    def test_cant_edit_finished_match(self):
+        """PATCH /matches/{id}: Finished match cannot be edited"""
+        test_user = self._create_test_user()
+        self.client.force_authenticate(user=test_user)
+        
+        testtime = timezone.now() - timedelta(days=1)
+        with mock.patch('django.utils.timezone.now') as mock_now:
+            mock_now.return_value = testtime
+            test_match = self._create_test_match(owner=test_user,
+                                                 date=(timezone.now() + timedelta(hours=2)))
+        
+        response = self.client.patch(f'{URL_PREFFIX}/matches/{test_match.id}', 
+                                   {'title': 'New title'}, format='json', follow=True)
+        self.assertEquals(response.status_code, 400)
+        self.assertJSONEqual(response, {'errors': ['Finished match cannot be edited']})
+    
+    def test_cant_decrease_match_limit_participants(self):
+        """PATCH /matches/{id}: Limit participants must be grater than current total participants"""
+        test_user = self._create_test_user()
+        test_match = self._create_test_match(owner=test_user)
+        
+        total_subscribers = 5
+        for i in range(total_subscribers):
+            user = User.objects.create_user(username=f'user{i}', email=f'user{i}@gmail.com', password='1234')
+            MatchSubscription.objects.create(match=test_match, user=user)
+        self.client.force_authenticate(user=test_user)
+        
+        response = self.client.patch(f'{URL_PREFFIX}/matches/{test_match.id}', 
+                                    {'limit_participants': total_subscribers - 1}, format='json', follow=True)
+        self.assertEquals(response.status_code, 400)
+        self.assertJSONEqual(response, {'errors': ['Limit participants must be grater than current total participants']})
+
+    def test_user_matches_pagination(self):
+        """GET /users/{username}/matches: Should return pagination fields (count, next, previous and results)"""
+        test_user = self._create_test_user()
+        self._create_test_match(owner=test_user)
+        self.client.force_authenticate(user=test_user)
+        url = f'{URL_PREFFIX}/users/{test_user.username}/matches'
+        response = self.client.get(url, follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertJSONContains(response, {'count', 'next', 'previous', 'results'})
+    
+    def test_user_matches_structure(self):
+        """GET /users/{username}/matches: Should return a Match model in results"""
+        test_user = self._create_test_user()
+        self.client.force_authenticate(user=test_user)
+        self._create_test_match(owner=test_user)
+        response = self.client.get(f'{URL_PREFFIX}/users/{test_user.username}/matches', follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertIn('results', response.json())
+        self.assertEquals(len(response.json()['results']), 1)
+        self.assertIn('title', response.json()['results'][0])
+
+    def test_not_found_user_matches(self):
+        """GET /users/{username}/matches: Should return a 404 error if user does not exist"""
+        test_user = self._create_test_user()
+        self.client.force_authenticate(user=test_user)
+        response = self.client.get(f'{URL_PREFFIX}/users/whoever/matches', follow=True)
+        self.assertEquals(response.status_code, 404)
+        self.assertJSONEqual(response, {'errors': ['User not found']})
     
     def _create_test_user(self):
         return User.objects.create_user(username='whatever', email='whatever@gmail.com', password='1234')

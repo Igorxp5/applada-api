@@ -212,9 +212,31 @@ class SearchMatchEndpointTestCase(TestCase):
         
         data = response.json()
 
-        self.assertEquals(data['results'][0]['title'], f'Match title {offset}')
+        self.assertEquals(data['results'][0]['title'], f'Match title {total_matches - offset - 1}')
 
         assert len(data['results']) == limit, f'Result do not have {limit} records'
+    
+    def test_search_match_order(self):
+        """GET /matches: Match order should be returned in descending created date"""
+        test_user = self._create_test_user()
+        self.client.force_authenticate(user=test_user)
+        
+        lat, lon, rad = -8.0651966, -34.944717, 15
+        
+        total_matches = 2
+        for i in range(total_matches):
+            self._create_test_match(owner=test_user, 
+                                    latitude=lat, 
+                                    longitude=lon,
+                                    title=f'Match title {i}',
+                                    date=timezone.now() + timedelta(days=i + 1))
+
+        url = f'{URL_PREFFIX}/matches?latitude={lat}&longitude={lon}&radius={rad}'        
+        response = self.client.get(url, follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertJSONContentType(response)
+        self.assertEquals(response.json()['results'][0]['title'], 'Match title 1')
+        self.assertEquals(response.json()['results'][1]['title'], 'Match title 0')
 
     def _create_test_user(self):
         return User.objects.create_user(username='whatever', email='whatever@gmail.com', password='1234')
