@@ -15,11 +15,103 @@ jobs:
           POSTGRES_PASSWORD: postgres
     steps:
       - checkout
-      - run: pip install -r requirements.txt
-      - run: /bin/wait-for applada-db:5432
-      - run: python manage.py test -d --noinput api_v1/tests/*
+      - run: 
+          name: Installing dependencies
+          command: pip install -r requirements.txt
+      - run: 
+          name: Waiting Database service start
+          command: /bin/wait-for applada-db:5432
+      - run: 
+          name: Running tests
+          command: python manage.py test -d --noinput api_v1/tests/*
+        
+  publish-github-release:
+    docker:
+      - image: cibuilds/github:0.10
+    steps:
+      - run: 
+          name: Installing semver
+          command: |
+            git clone https://github.com/fsaintjacques/semver-tool /semver-tool
+            mv /semver-tool/src/semver /bin/semver
+            chmod +x /bin/semver
+      - checkout
+      - run:
+          name: 'Getting commit type'
+          command: |
+            export COMMIT_MESSAGE=$(git show --pretty='format:%s' --no-patch $CIRCLE_SHA1)
+            export COMMIT_TYPE=$(echo $COMMIT_MESSAGE | grep -o ".*:" | head -1 | sed 's/.$//')
+            echo "export COMMIT_TYPE=$COMMIT_TYPE" >> $BASH_ENV
+            echo Commit type: $COMMIT_TYPE
+      - run:
+          name: 'Getting current version'
+          command: |
+            CURRENT_VERSION=$(git describe --abbrev=0 --tag | sed 's/^v//')
+            echo "export CURRENT_VERSION=$CURRENT_VERSION" >> $BASH_ENV
+            echo Current version: $CURRENT_VERSION
+      - run:
+          name: 'Getting current release name'
+          command: |
+            if [ "CIRCLE_BRANCH" = "master" ]; then
+              CURRENT_RELEASE_NAME="release"
+            else
+              CURRENT_RELEASE_NAME="debug"
+            fi;
+            echo "export CURRENT_RELEASE_NAME=$CURRENT_RELEASE_NAME" >> $BASH_ENV
+            echo Current release name: $CURRENT_RELEASE_NAME
+      - run:
+          name: 'Building next name version'
+          command: |
+            if [ "$COMMIT_TYPE" = "FEAT" ]; then
+              NEXT_NAME_VERSION=$(semver bump minor $CURRENT_VERSION)
+            else
+              NEXT_NAME_VERSION=$(semver bump patch $CURRENT_VERSION)
+            fi;
+            NEXT_NAME_VERSION=$(semver bump prerel $CURRENT_RELEASE_NAME $NEXT_NAME_VERSION)
+            NEXT_NAME_VERSION="v$NEXT_NAME_VERSION"
+            echo "export NEXT_NAME_VERSION=$NEXT_NAME_VERSION" >> $BASH_ENV
+            echo Next version name: $NEXT_NAME_VERSION
+      - run:
+          name: 'Publish Release on GitHub'
+          command: |
+            git tag $NEXT_NAME_VERSION $CIRCLE_SHA1
+            git remote add by-token "https://$CIRCLE_PROJECT_USERNAME:$GITHUB_TOKEN@github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git"
+            git push --tags by-token
+  
+  conventional-commit-lint:
+    docker:
+      - image: circleci/python:3.7
+    environment:
+      MSG_FILE: /tmp/commit-message-file
+    steps:
+      - checkout
+      - run: 
+          name: Installing dependencies
+          command: |
+            pip install -U --user commitizen
+            pip install -U --user .circleci/cz_applada
+      - run:
+          name: Getting commit message
+          command: |
+            export COMMIT_MESSAGE=$(git show --pretty='format:%s' --no-patch $CIRCLE_SHA1)
+            echo "$COMMIT_MESSAGE" > $MSG_FILE
+      - run:
+          name: Validating commit message
+          command: cz -n cz_applada check --commit-msg-file $MSG_FILE
+  
+
 workflows:
   version: 2
   workflow:
     jobs:
+      - conventional-commit-lint
       - test
+      - publish-github-release:
+          requires:
+            - conventional-commit-lint
+            - test
+          filters:
+            branches:
+              only:
+                - master
+                - development
