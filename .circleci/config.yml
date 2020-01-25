@@ -5,7 +5,7 @@ jobs:
       - image: igorxp5/applada-api:latest
         name: applada-api
         auth:
-          username: igorxp5
+          username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
       - image: kartoza/postgis
         name: applada-db
@@ -79,10 +79,10 @@ jobs:
             git push --tags by-token
   
   conventional-commit-lint:
-    docker:
-      - image: circleci/python:3.7
     environment:
       MSG_FILE: /tmp/commit-message-file
+    docker:
+      - image: circleci/python:3.7
     steps:
       - checkout
       - run: 
@@ -99,7 +99,103 @@ jobs:
           name: Validating commit message
           command: cz -n cz_applada check --commit-msg-file $MSG_FILE
   
+  build-api-docker-image:
+    docker:
+      - image: circleci/buildpack-deps:stretch
+    environment:
+      IMAGE_NAME: igorxp5/applada-api
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build Docker image
+          command: docker build -t $IMAGE_NAME:latest .
 
+  publish-api-image-in-docker-hub:
+    environment:
+      IMAGE_NAME: applada-api
+    docker:
+      - image: circleci/buildpack-deps:stretch
+    steps:
+      - setup_remote_docker
+      - run:
+          name: Publish Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            docker push $IMAGE_NAME:latest
+  
+  update-applada-api-project-gcloud-disk:
+    docker:
+      - image: google/cloud-sdk
+    steps: 
+      - run: &login_gcloud
+          name: Login into Google Cloud
+          command: |
+            echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
+            gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+            gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+      - run: &install_gcloud_updates
+          name: Installing gcloud CLI updates
+          command: gcloud --quiet components update
+      - run: &start_debug_instance
+          name: Starting Debug instance
+          command: gcloud compute instances start $DEBUG_INSTANCE_NAME
+      - run: &get_debug_instance_ip
+          name: Getting Debug instance External IP
+          command: |
+            EXTERNAL_IP=$(gcloud compute instances describe $DEBUG_INSTANCE_NAME --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+            echo "export DEBUG_INSTANCE_EXTERNAL_IP=$EXTERNAL_IP" >> $BASH_ENV
+      - add_ssh_keys:
+          fingerprints:
+            - "3b:20:f6:44:d6:ca:b2:bf:70:5b:fd:76:89:fd:17:58"
+      - run:
+          name: Pull updates into remote git repository
+          command: ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git pull
+  
+  restart-applada-api-debug:
+    docker:
+      - image: google/cloud-sdk
+    steps:
+      - run:
+          <<: *login_gcloud
+      - run:
+          <<: *install_gcloud_updates
+      - run:
+          <<: *start_debug_instance
+      - run:
+          <<: *get_debug_instance_ip
+      - add_ssh_keys:
+          fingerprints:
+            - "3b:20:f6:44:d6:ca:b2:bf:70:5b:fd:76:89:fd:17:58"
+      - run:
+          name: Docker Compose Down
+          command: |
+            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP \
+            ssh -i circle_ci circleci@35.215.215.17 docker-compose \
+            --project-directory $DEBUG_INSTANCE_REPOSITORY_DIR 
+            -f $DEBUG_INSTANCE_REPOSITORY_DIR/docker-compose.yml down
+      - run:
+          name: Docker Compose Up
+          command: |
+            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP \
+            ssh -i circle_ci circleci@35.215.215.17 docker-compose \
+            --project-directory $DEBUG_INSTANCE_REPOSITORY_DIR 
+            -f $DEBUG_INSTANCE_REPOSITORY_DIR/docker-compose.yml up -d
+  
+  rolling-out-update-to-api-instances:
+    docker:
+      - image: google/cloud-sdk
+    steps:
+      - run:
+          <<: *login_gcloud
+      - run:
+          <<: *install_gcloud_updates
+      - run:
+          name: Rolling out updates do API instances
+          command: |
+            gcloud compute instance-groups managed rolling-action start-update \
+            $GCLOUD_API_INSTANCE_GROUP_NAME --version template=$GCLOUD_API_INSTANCE_TEMPLATE_NAME
+  
 workflows:
   version: 2
   workflow:
@@ -107,6 +203,7 @@ workflows:
       - conventional-commit-lint
       - test
       - publish-github-release:
+          type: approval
           requires:
             - conventional-commit-lint
             - test
@@ -115,3 +212,42 @@ workflows:
               only:
                 - master
                 - development
+      - update-applada-api-project-gcloud-disk:
+          type: approval
+          requires:
+            - conventional-commit-lint
+            - test
+          filters:
+            branches:
+              only:
+                - development
+      - restart-applada-api-debug:
+          requires:
+            - update-applada-api-project-gcloud-disk
+          filters:
+            branches:
+              only:
+                - development
+      - build-api-docker-image:
+          type: approval
+          requires:
+            - conventional-commit-lint
+            - test
+          filters:
+            branches:
+              only:
+                - master
+      - publish-api-image-in-docker-hub:
+          requires:
+            - build-api-docker-image
+          filters:
+            branches:
+              only:
+                - master
+      - rolling-out-update-to-api-instances:
+          requires:
+            - publish-api-image-in-docker-hub
+          filters:
+            branches:
+              only:
+                - master
