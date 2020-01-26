@@ -20,9 +20,12 @@ services:
     volumes:
       - /opt/applada-db:/var/lib/postgresql/data/pgdata
     ports:
-      - '8001:5432'
+      - '5432:5432'
   applada-api:
     container_name: applada-api
+    environment:
+      API_HOST: applada.com.br
+      DB_HOST: applada-db
     build: 
       context: '.'
     command: sh -c '/bin/wait-for applada-db:5432 -- python manage.py migrate && python manage.py runserver 0.0.0.0:80'

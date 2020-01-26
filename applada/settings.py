@@ -31,8 +31,15 @@ SECRET_KEY = 'j)!otp@9ke2@m6g8rptf8vyn3-u$3d%gf9pb32xovx5@tz(0sz'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') != 'False'
 
-ALLOWED_HOSTS = ['applada.com.br', 'api.applada.com.br', 'dev.applada.com.br', 'test.applada.com.br']
+API_HOST = os.getenv('API_HOST', 'applada.com.br')
 
+DB_HOST = os.getenv('DB_HOST', 'applada-db')
+DB_PORT = os.getenv('DB_PORT', '5432')
+DB_NAME = os.getenv('DB_NAME', 'applada')
+DB_USER = os.getenv('DB_USER', 'postgres')
+DB_PASS = os.getenv('DB_PASS', 'postgres')
+
+ALLOWED_HOSTS = [API_HOST]
 
 # Application definition
 
@@ -92,11 +99,11 @@ NOSE_ARGS = ['--with-spec', '--spec-color', '--rednose']
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'applada',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': 'applada-db',
-        'PORT': '5432',
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASS,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
     }
 }
 
