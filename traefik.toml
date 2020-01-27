@@ -1,0 +1,21 @@
+defaultEntryPoints = ["http"]
+logLevel = "DEBUG"
+
+[api]
+address = ":8080"
+
+[entryPoints]
+    [entryPoints.http]
+        address = ":80"
+    [entryPoints.postgres]
+        address = ":5432"
+
+[retry]
+attempts = 3
+maxMem = 3
+
+[docker]
+domain = "applada.com.br"
+watch = true
+network = "backend"
+exposedbydefault = false

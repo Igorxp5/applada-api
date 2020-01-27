@@ -19,8 +19,6 @@
 # Begin settings
 # Get the Production API key/secret from https://developer.godaddy.com/keys/.
 # Ensure it's for "Production" as first time it's created for "Test".
-source /etc/environment
-
 export GODADDY_API_KEY=${GODADDY_API_KEY=""}
 export GODADDY_API_SECRET=${GODADDY_API_SECRET=""}
 export GODADDY_DOMAIN=${GODADDY_DOMAIN="applada.com.br"}

@@ -31,7 +31,7 @@ SECRET_KEY = 'j)!otp@9ke2@m6g8rptf8vyn3-u$3d%gf9pb32xovx5@tz(0sz'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') != 'False'
 
-API_HOST = os.getenv('API_HOST', 'applada.com.br')
+API_HOST = os.getenv('API_HOST', 'api.applada.com.br')
 
 DB_HOST = os.getenv('DB_HOST', 'applada-db')
 DB_PORT = os.getenv('DB_PORT', '5432')
