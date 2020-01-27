@@ -1,37 +1,89 @@
 version: '3.7'
+
+# Base API service
+x-applada-api: &applada_api
+  env_file:
+    - ./.env
+  command: sh -c '/bin/wait-for -t 60 applada-db:5432 -- python manage.py migrate && python manage.py runserver 0.0.0.0:80'
+  depends_on:
+    - applada-db
+  networks:
+    - backend
+
+# Real services
 services:
-  applada-nginx:
-    image: nginx
-    container_name: applada-nginx
-    ports:
-      - '80:80'
+  applada-ddns:
+    image: ellerbrock/alpine-bash-curl-ssl
+    environment: 
+      - GODADDY_API_KEY
+      - GODADDY_API_SECRET
+      - GODADDY_DOMAIN
+    command: /bin/bash /home/curl_user/godaddy-ddns.sh
     volumes:
-      - ./nginx:/etc/nginx/conf.d/
-    depends_on:
-      - applada-api
+      - ./godaddy-ddns.sh:/home/curl_user/godaddy-ddns.sh
+  
+  applada-reverse-proxy:
+    image: traefik:v1.7
+    container_name: applada-reverse-proxy
+    ports:
+      - 80:80
+      - 8080:8080
+    networks:
+      - frontend
+      - backend
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik.toml:/traefik.toml
+    restart: on-failure
+
   applada-db:
     image: kartoza/postgis
     container_name: applada-db
     environment:
-      POSTGRES_DB: applada
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      PGDATA: /var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=$DB_USER
+      - POSTGRES_PASSWORD=$DB_PASS
+      - POSTGRES_DB=applada
+      - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - /opt/applada-db:/var/lib/postgresql/data/pgdata
+    networks:
+      - backend
     ports:
-      - '5432:5432'
-  applada-api:
-    container_name: applada-api
-    environment:
-      API_HOST: applada.com.br
-      DB_HOST: applada-db
+      - 5432:5432
+    restart: on-failure
+
+  applada-api-release:
+    <<: *applada_api
+    image: igorxp5/applada-api:latest
+    container_name: applada-api-release
+    environment: 
+      - DEBUG=False
+      - API_HOST=$RELEASE_API_HOST
+    restart: on-failure
+    labels:
+      - traefik.enable=true
+      - traefik.backend=applada-api-release
+      - traefik.frontend.rule=Host:${RELEASE_API_HOST}
+      - traefik.docker.network=backend
+      - traefik.port=80
+  
+  applada-api-debug:
+    <<: *applada_api
+    container_name: applada-api-debug
     build: 
       context: '.'
-    command: sh -c '/bin/wait-for applada-db:5432 -- python manage.py migrate && python manage.py runserver 0.0.0.0:80'
+    environment:
+      - DEBUG=True
+      - API_HOST=$DEBUG_API_HOST
+    command: sh -c '/bin/wait-for -t 60 applada-db:5432 -- sleep 10 && python manage.py migrate && python manage.py runserver 0.0.0.0:80'
     volumes:
       - .:/applada-api/
-    expose:
-      - 80
-    depends_on:
-    - applada-db
+    labels:
+      - traefik.enable=true
+      - traefik.backend=applada-api-debug
+      - traefik.frontend.rule=Host:${DEBUG_API_HOST}
+      - traefik.docker.network=backend
+      - traefik.port=80
+networks:
+  frontend:
+  backend:
