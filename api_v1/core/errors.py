@@ -3,7 +3,7 @@ import traceback
 import django.core.exceptions
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.translation import gettext as _
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -69,7 +69,8 @@ def __translate_error(field, error):
         result = _(error)
     return result.capitalize()
 
+def not_found_json():
+    return {'errors': [_('Resource or item not found')]}
 
 def resource_not_found_response():
-    return Response({'errors': [_('Resource or item not found')]}, 
-                           status=status.HTTP_404_NOT_FOUND)
+    return Response(not_found_json(), status=status.HTTP_404_NOT_FOUND)
