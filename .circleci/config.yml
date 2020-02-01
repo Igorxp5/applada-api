@@ -166,17 +166,18 @@ jobs:
           name: Fetch updates into remote git repository
           command: |
             ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP \
-            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git fetch origin
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR fetch origin
       - run:
           name: Pull updates into development branch
           command: |
             ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
-            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout development
-            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git reset HEAD --hard
-            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout master
-            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git branch -D development
-            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout origin/development
-            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout -b development
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR checkout development
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR reset HEAD --hard
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR checkout master
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR branch -D development
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR checkout origin/development
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR checkout -b development
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR checkout -- .
             EOF
   
   restart-applada-api-debug:
@@ -197,8 +198,9 @@ jobs:
       - run:
           name: Changing current branch to 'development'
           command: |
-            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP \
-            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout development 
+            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR checkout development
+            EOF
       - run:
           name: Recreate AppLada Debug container
           command: |
