@@ -112,8 +112,7 @@ jobs:
             CURRENT_VERSION=$(git describe --abbrev=0 --tag | sed 's/^v//')
             echo "export CURRENT_VERSION=$CURRENT_VERSION" >> $BASH_ENV
             echo Current version: $CURRENT_VERSION
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - run:
           name: Build Docker image
           command: docker build -t $IMAGE_NAME:latest -t $IMAGE_NAME:$CURRENT_VERSION .
