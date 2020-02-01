@@ -103,29 +103,43 @@ jobs:
     docker:
       - image: circleci/buildpack-deps:stretch
     environment:
-      IMAGE_NAME: igorxp5/applada-api
+      IMAGE_NAME: $RELEASE_DOCKER_IMAGE
     steps:
       - checkout
+      - run:
+          name: 'Getting current version'
+          command: |
+            CURRENT_VERSION=$(git describe --abbrev=0 --tag | sed 's/^v//')
+            echo "export CURRENT_VERSION=$CURRENT_VERSION" >> $BASH_ENV
+            echo Current version: $CURRENT_VERSION
       - setup_remote_docker:
           docker_layer_caching: true
       - run:
           name: Build Docker image
-          command: docker build -t $IMAGE_NAME:latest .
+          command: docker build -t $IMAGE_NAME:latest -t $IMAGE_NAME:$CURRENT_VERSION .
 
   publish-api-image-in-docker-hub:
     environment:
-      IMAGE_NAME: applada-api
+      IMAGE_NAME: $RELEASE_DOCKER_IMAGE
     docker:
       - image: circleci/buildpack-deps:stretch
     steps:
+      - checkout
+      - run:
+          name: 'Getting current version'
+          command: |
+            CURRENT_VERSION=$(git describe --abbrev=0 --tag | sed 's/^v//')
+            echo "export CURRENT_VERSION=$CURRENT_VERSION" >> $BASH_ENV
+            echo Current version: $CURRENT_VERSION
       - setup_remote_docker
       - run:
           name: Publish Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             docker push $IMAGE_NAME:latest
+            docker push $IMAGE_NAME:$CURRENT_VERSION
   
-  update-applada-api-project-gcloud-disk:
+  update-applada-api-repository:
     docker:
       - image: google/cloud-sdk
     steps: 
@@ -158,11 +172,12 @@ jobs:
           name: Pull updates into development branch
           command: |
             ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout development
             git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git reset HEAD --hard
             git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout master
             git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git branch -D development
             git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout origin/development
-            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout development
+            git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout -b development
             EOF
   
   restart-applada-api-debug:
@@ -186,11 +201,34 @@ jobs:
             ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP \
             git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git checkout development 
       - run:
-          name: Docker Compose Down
+          name: Recreate AppLada Debug container
           command: |
-            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP \
-            docker-compose --project-directory $DEBUG_INSTANCE_REPOSITORY_DIR \
-            -f $DEBUG_INSTANCE_REPOSITORY_DIR/docker-compose.yml down
+            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
+            docker-compose -f $DEBUG_INSTANCE_REPOSITORY_DIR/docker-compose.yml \
+            --env-file $DEBUG_INSTANCE_REPOSITORY_DIR/.env \
+            up -d --remove-orphans --force-recreate --no-deps $DEBUG_CONTAINER_NAME
+            EOF
+  
+  rolling-out-api-release:
+    docker:
+      - image: google/cloud-sdk
+    steps:
+      - run:
+          <<: *login_gcloud
+      - run:
+          name: Download latest API Docker Image
+          command: |
+            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
+            docker pull $RELEASE_DOCKER_IMAGE:latest
+            EOF
+      - run:
+          name: Recreate AppLada Release container
+          command: |
+            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
+            docker-compose -f $DEBUG_INSTANCE_REPOSITORY_DIR/docker-compose.yml \
+            --env-file $DEBUG_INSTANCE_REPOSITORY_DIR/.env \
+            up -d --remove-orphans --force-recreate --no-deps $RELEASE_CONTAINER_NAME
+            EOF
       - run:
           name: Remove stopped containers
           command: |
@@ -203,24 +241,6 @@ jobs:
             ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
             docker rmi $(docker images -f 'dangling=true' -q) | echo 'No images to delete'
             EOF
-      - run:
-          name: Docker Compose Up
-          command: |
-            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP \
-            docker-compose --project-directory $DEBUG_INSTANCE_REPOSITORY_DIR \
-            -f $DEBUG_INSTANCE_REPOSITORY_DIR/docker-compose.yml up --build -d
-  
-  rolling-out-update-to-api-instances:
-    docker:
-      - image: google/cloud-sdk
-    steps:
-      - run:
-          <<: *login_gcloud
-      - run:
-          name: Rolling out updates do API instances
-          command: |
-            gcloud compute instance-groups managed rolling-action start-update \
-            $GCLOUD_API_INSTANCE_GROUP_NAME --version template=$GCLOUD_API_INSTANCE_TEMPLATE_NAME
   
 workflows:
   version: 2
@@ -237,7 +257,7 @@ workflows:
               only:
                 - master
                 - development
-      - update-applada-api-project-gcloud-disk:
+      - update-applada-api-repository:
           requires:
             - conventional-commit-lint
             - test
@@ -247,7 +267,7 @@ workflows:
                 - development
       - restart-applada-api-debug:
           requires:
-            - update-applada-api-project-gcloud-disk
+            - update-applada-api-repository
           filters:
             branches:
               only:
@@ -267,7 +287,7 @@ workflows:
             branches:
               only:
                 - master
-      - rolling-out-update-to-api-instances:
+      - rolling-out-api-release:
           requires:
             - publish-api-image-in-docker-hub
           filters:
