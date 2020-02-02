@@ -52,7 +52,7 @@ jobs:
       - run:
           name: 'Getting current release name'
           command: |
-            if [ "CIRCLE_BRANCH" = "master" ]; then
+            if [ "$CIRCLE_BRANCH" = "master" ]; then
               CURRENT_RELEASE_NAME="release"
             else
               CURRENT_RELEASE_NAME="debug"
@@ -62,7 +62,9 @@ jobs:
       - run:
           name: 'Building next name version'
           command: |
-            if [ "$COMMIT_TYPE" = "FEAT" ]; then
+            if [ "$CURRENT_RELEASE_NAME" = "release" ]; then
+              NEXT_NAME_VERSION="$CURRENT_VERSION"
+            elif [ "$COMMIT_TYPE" = "FEAT" ]; then
               NEXT_NAME_VERSION=$(semver bump minor $CURRENT_VERSION)
             else
               NEXT_NAME_VERSION=$(semver bump patch $CURRENT_VERSION)
@@ -102,24 +104,26 @@ jobs:
   build-api-docker-image:
     docker:
       - image: circleci/buildpack-deps:stretch
-    environment:
-      IMAGE_NAME: $RELEASE_DOCKER_IMAGE
     steps:
       - checkout
       - run:
           name: 'Getting current version'
           command: |
-            CURRENT_VERSION=$(git tag | tail -1 | sed 's/^v//')
+            CURRENT_VERSION=$(git tag | tail -1 | sed 's/^v//' | sed 's/-release$//')
             echo "export CURRENT_VERSION=$CURRENT_VERSION" >> $BASH_ENV
             echo Current version: $CURRENT_VERSION
       - setup_remote_docker
       - run:
           name: Build Docker image
-          command: docker build -t $IMAGE_NAME:latest -t $IMAGE_NAME:$CURRENT_VERSION .
-
+          command: docker build -t "$RELEASE_DOCKER_IMAGE_NAME:latest" -t "$RELEASE_DOCKER_IMAGE_NAME:$CURRENT_VERSION" .
+      - run:
+          name: Publish Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            docker push "$RELEASE_DOCKER_IMAGE:latest"
+            docker push "$RELEASE_DOCKER_IMAGE:$CURRENT_VERSION"
+  
   publish-api-image-in-docker-hub:
-    environment:
-      IMAGE_NAME: $RELEASE_DOCKER_IMAGE
     docker:
       - image: circleci/buildpack-deps:stretch
     steps:
@@ -127,16 +131,11 @@ jobs:
       - run:
           name: 'Getting current version'
           command: |
-            CURRENT_VERSION=$(git tag | tail -1 | sed 's/^v//')
+            CURRENT_VERSION=$(git tag | tail -1 | sed 's/^v//' | sed 's/-release$//')
             echo "export CURRENT_VERSION=$CURRENT_VERSION" >> $BASH_ENV
             echo Current version: $CURRENT_VERSION
       - setup_remote_docker
-      - run:
-          name: Publish Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            docker push $IMAGE_NAME:latest
-            docker push $IMAGE_NAME:$CURRENT_VERSION
+      
   
   update-applada-api-repository:
     docker:
@@ -277,20 +276,14 @@ workflows:
           requires:
             - conventional-commit-lint
             - test
-          filters:
-            branches:
-              only:
-                - master
-      - publish-api-image-in-docker-hub:
-          requires:
-            - build-api-docker-image
+            - publish-github-release
           filters:
             branches:
               only:
                 - master
       - rolling-out-api-release:
           requires:
-            - publish-api-image-in-docker-hub
+            - build-api-docker-image
           filters:
             branches:
               only:
