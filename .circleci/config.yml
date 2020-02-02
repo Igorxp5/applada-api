@@ -46,7 +46,7 @@ jobs:
       - run:
           name: 'Getting current version'
           command: |
-            CURRENT_VERSION=$(git describe --abbrev=0 --tag | sed 's/^v//')
+            CURRENT_VERSION=$(git tag | tail -1 | sed 's/^v//')
             echo "export CURRENT_VERSION=$CURRENT_VERSION" >> $BASH_ENV
             echo Current version: $CURRENT_VERSION
       - run:
@@ -109,7 +109,7 @@ jobs:
       - run:
           name: 'Getting current version'
           command: |
-            CURRENT_VERSION=$(git describe --abbrev=0 --tag | sed 's/^v//')
+            CURRENT_VERSION=$(git tag | tail -1 | sed 's/^v//')
             echo "export CURRENT_VERSION=$CURRENT_VERSION" >> $BASH_ENV
             echo Current version: $CURRENT_VERSION
       - setup_remote_docker
@@ -127,7 +127,7 @@ jobs:
       - run:
           name: 'Getting current version'
           command: |
-            CURRENT_VERSION=$(git describe --abbrev=0 --tag | sed 's/^v//')
+            CURRENT_VERSION=$(git tag | tail -1 | sed 's/^v//')
             echo "export CURRENT_VERSION=$CURRENT_VERSION" >> $BASH_ENV
             echo Current version: $CURRENT_VERSION
       - setup_remote_docker
