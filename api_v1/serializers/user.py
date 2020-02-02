@@ -15,6 +15,9 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('username', 'name', 'email', 'level', 'registred_date', 'old_password', 'password')
         read_only_fields = ('level',)
+        extra_kwargs = {
+            'email': {'write_only': True}
+        }
     
     def get_fields(self, *args, **kwargs):
         fields = super().get_fields(*args, **kwargs)
