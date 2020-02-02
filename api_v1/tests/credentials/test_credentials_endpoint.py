@@ -19,10 +19,9 @@ class UserEndpointTestCase(TestCase):
         response = self.client.post(f'{URL_PREFFIX}/sign-up', 
                                     account_data, format='json', follow=True)
         self.assertEquals(response.status_code, 201)
-        self.assertJSONContains(response, {'username', 'email', 'name', 'level', 'registred_date'})
+        self.assertJSONContains(response, {'username', 'name', 'level', 'registred_date'})
         
-        expected_data = dict(username=account_data['username'], level=1, 
-                             email=account_data['email'], name=None)
+        expected_data = dict(username=account_data['username'], level=1, name=None)
         self.assertJSONContains(response, expected_data, value_equals=True, only_expected_keys=False)
     
     def test_account_same_username_error(self):
