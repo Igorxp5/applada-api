@@ -95,7 +95,7 @@ class UserEndpointTestCase(TestCase):
                                      {'old_password': password, 'password': new_password}, 
                                      format='json', follow=True)
         self.assertEquals(response.status_code, 200)
-        self.assertJSONContains(response, {'username', 'name', 'email', 'level', 'registred_date'})
+        self.assertJSONContains(response, {'username', 'name', 'level', 'registred_date'})
         
         sign_response = self.client.post(f'{URL_PREFFIX}/sign-in', 
                                      {'username': test_user.username, 'password': new_password}, 
@@ -115,7 +115,7 @@ class UserEndpointTestCase(TestCase):
         self.client.force_authenticate(user=test_user)
         response = self.client.get(f'{URL_PREFFIX}/users/{test_user.username}', follow=True)
         self.assertEquals(response.status_code, 200)
-        self.assertJSONContains(response, {'username', 'name', 'email', 'level', 'registred_date'})
+        self.assertJSONContains(response, {'username', 'name', 'level', 'registred_date'})
         self.assertEquals(response.json()['username'], test_user.username)
 
     def test_user_not_found(self):
