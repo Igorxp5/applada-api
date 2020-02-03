@@ -123,9 +123,9 @@ jobs:
             docker push "$RELEASE_DOCKER_IMAGE:latest"
             docker push "$RELEASE_DOCKER_IMAGE:$CURRENT_VERSION"
   
-  publish-api-image-in-docker-hub:
+  rebase-development-branch:
     docker:
-      - image: circleci/buildpack-deps:stretch
+      - image: cibuilds/github:0.10
     steps:
       - checkout
       - run:
@@ -134,9 +134,37 @@ jobs:
             CURRENT_VERSION=$(git tag | tail -1 | sed 's/^v//' | sed 's/-release$//')
             echo "export CURRENT_VERSION=$CURRENT_VERSION" >> $BASH_ENV
             echo Current version: $CURRENT_VERSION
-      - setup_remote_docker
-      
-  
+      - run:
+          name: Disable development protection
+          command: |
+            export PROTECTION_RAW=$(curl -XGET -H "Content-type: application/json" -H "Authorization: token $GITHUB_TOKEN" 'https://api.github.com/repos/Igorxp5/applada-api/branches/development/protection')
+            export PROTECTION=$(echo $PROTECTION_RAW | jq -M 'del(.url,.required_status_checks.url,.required_status_checks.contexts_url,.enforce_admins.url,.required_pull_request_reviews.url,.restrictions.url,.restrictions.users_url,.restrictions.teams_url,.restrictions.apps_url) | to_entries | map({"key": .key, "value": (if .value.enabled == null then .value else .value.enabled end)}) | from_entries | . + {"required_pull_request_reviews": .required_pull_request_reviews} | . + {"restrictions": .restrictions}')
+            curl -XDELETE -H "Content-type: application/json" -H "Authorization: token $GITHUB_TOKEN" 'https://api.github.com/repos/Igorxp5/applada-api/branches/development/protection'
+            echo "export PROTECTION=$PROTECTION" >> $BASH_ENV
+      - run:
+          name: Delete remote development branch
+          command: |
+            git remote add by-token "https://$CIRCLE_PROJECT_USERNAME:$GITHUB_TOKEN@github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git"
+            git push --tags by-token
+            git push --delete by-token development | echo 'Development branch has already been deleted'
+      - run:
+          name: Rebase development branch
+          command: |
+            git checkout origin/master
+            git checkout -b development
+      - run:
+          name: Publish development branch into GitHub
+          command: |
+            git push -f -u by-token development
+      - run:
+          name: Remove debug tag
+          command: |
+            git push --delete by-token "v$CURRENT_VERSION-debug"
+      - run:
+          name: Re-enable development protection
+          command: |
+            curl -XPUT -H "Content-type: application/json" -H "Authorization: token $GITHUB_TOKEN" -d "$PROTECTION" 'https://api.github.com/repos/Igorxp5/applada-api/branches/development/protection'
+
   update-applada-api-repository:
     docker:
       - image: google/cloud-sdk
@@ -281,11 +309,18 @@ workflows:
             branches:
               only:
                 - development
-      - build-api-docker-image:
+      - rebase-development-branch:
           requires:
             - conventional-commit-lint
             - test
             - publish-github-release
+          filters:
+            branches:
+              only:
+                - master
+      - build-api-docker-image:
+          requires:
+            - rebase-development-branch
           filters:
             branches:
               only:
