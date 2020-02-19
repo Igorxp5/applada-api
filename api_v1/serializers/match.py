@@ -32,6 +32,18 @@ class MatchSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class MatchSearchResultSerializer(serializers.ModelSerializer):
+    match = MatchSerializer(source='*', required=True)
+    distance = serializers.SerializerMethodField('get_distance_value')
+
+    class Meta:
+        model = Match
+        fields = ('match', 'distance')
+    
+    def get_distance_value(self, obj):
+        return obj.distance.km
+
+
 class MatchSubscriptionSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     date = serializers.DateTimeField(read_only=True)
