@@ -10,7 +10,8 @@ from rest_framework.pagination import LimitOffsetPagination
 
 from api_v1.models import User, Match, MatchSubscription
 from api_v1.filters import LocationRangeFilter, MatchStatusFilter
-from api_v1.serializers import MatchSerializer, MatchSubscriptionSerializer
+from api_v1.serializers import MatchSerializer, MatchSubscriptionSerializer, \
+                               MatchSearchResultSerializer
 from api_v1.core import IsAuthenticated, IsOwnerOrReadOnly, IsOwnerUser, \
                         IsMatchSubscriptionUserOrReadOnly
 
@@ -29,14 +30,17 @@ class MatchRetrieveUpdateDelete(generics.RetrieveUpdateDestroyAPIView):
 
 class MatchCreateSearch(generics.ListCreateAPIView):
     queryset = Match.objects.all()
-    serializer_class = MatchSerializer
     filter_backends = (LocationRangeFilter, MatchStatusFilter)
-    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
+    permission_classes = (IsAuthenticated,)
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
         return queryset.order_by('-created_date')
 
+    def get_serializer_class(self):
+        if self.request and self.request.method == 'GET':
+            return MatchSearchResultSerializer
+        return MatchSerializer
 
 class UsersMatch(generics.ListCreateAPIView):
     lookup_field = 'username'
