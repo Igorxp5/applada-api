@@ -14,6 +14,11 @@ DEFAULT_ENCODE = 'utf-8'
 
 class SearchMatchEndpointTestCase(TestCase):
     """Search Match Endpoint"""
+
+    match_expected_structure = {'id': None, 'title': None, 'description': None, 
+                                'owner': None, 'duration': None, 'category': None,
+                                'location': {'latitude', 'longitude'}, 'date': None,
+                                'status': None, 'created_date': None, 'limit_participants': None}
     
     def setUp(self):
         self.client = APIClient()
@@ -36,6 +41,48 @@ class SearchMatchEndpointTestCase(TestCase):
         self.assertEquals(response.status_code, 200)
         self.assertJSONContains(response, {'count', 'next', 'previous', 'results'})
     
+    def test_search_match_pagination_result_structure(self):
+        """GET /matches: The pagination match result should have fields (match and distance)"""
+        test_user = self._create_test_user()
+        test_match = self._create_test_match(owner=test_user)
+        self.client.force_authenticate(user=test_user)
+        lat, lon, rad = -8.0651966, -34.944717, 15
+        url = f'{URL_PREFFIX}/matches?latitude={lat}&longitude={lon}&radius={rad}'
+        response = self.client.get(url, follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertIn('results', response.json())
+        self.assertEquals(len(response.json()['results']), 1)
+        self.assertIn('match', response.json()['results'][0])
+        self.assertIn('distance', response.json()['results'][0])
+    
+    def test_searh_match_distance_value(self):
+        """GET /matches: Should return distance to match correctly"""
+        test_user = self._create_test_user()
+        self.client.force_authenticate(user=test_user)
+        
+        lat, lon, rad = -8.0651966, -34.944717, 15
+        test_match = self._create_test_match(owner=test_user, latitude=lat, longitude=lon)
+        close_location = -8.045210, -34.930935
+        
+        url = f'{URL_PREFFIX}/matches?latitude={close_location[0]}&longitude={close_location[1]}&radius={rad}'
+        response = self.client.get(url, follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertJSONContains(response, {'count', 'next', 'previous', 'results'})
+        self.assertEquals(len(response.json()['results']), 1)
+        self.assertIn('distance', response.json()['results'][0])
+        self.assertEquals(round(response.json()['results'][0]['distance']), 3)
+    
+    def test_match_structure(self):
+        """GET /matches: Search matches should return correct match structure"""
+        test_user = self._create_test_user()
+        test_match = self._create_test_match(owner=test_user)
+        self.client.force_authenticate(user=test_user)
+        lat, lon, rad = -8.0651966, -34.944717, 15
+        url = f'{URL_PREFFIX}/matches?latitude={lat}&longitude={lon}&radius={rad}'
+        response = self.client.get(url, follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertJSONContains(response.json()['results'][0]['match'], self.match_expected_structure)
+
     def test_search_match_radius_reach(self):
         """GET /matches: Should find matches by range area correctly"""
         test_user = self._create_test_user()
@@ -58,7 +105,7 @@ class SearchMatchEndpointTestCase(TestCase):
         self.assertEquals(response.status_code, 200)
         self.assertJSONContains(response, {'count', 'next', 'previous', 'results'})
         self.assertEquals(len(response.json()['results']), 1)
-        self.assertEquals(response.json()['results'][0]['title'], test_match.title)
+        self.assertEquals(response.json()['results'][0]['match']['title'], test_match.title)
         
         border_in = -7.957489, -34.868019
 
@@ -67,7 +114,7 @@ class SearchMatchEndpointTestCase(TestCase):
         self.assertEquals(response.status_code, 200)
         self.assertJSONContains(response, {'count', 'next', 'previous', 'results'})
         self.assertEquals(len(response.json()['results']), 1)
-        self.assertEquals(response.json()['results'][0]['title'], test_match.title)
+        self.assertEquals(response.json()['results'][0]['match']['title'], test_match.title)
 
         border_out = -7.947460, -34.854756
 
@@ -212,7 +259,7 @@ class SearchMatchEndpointTestCase(TestCase):
         
         data = response.json()
 
-        self.assertEquals(data['results'][0]['title'], f'Match title {total_matches - offset - 1}')
+        self.assertEquals(data['results'][0]['match']['title'], f'Match title {total_matches - offset - 1}')
 
         assert len(data['results']) == limit, f'Result do not have {limit} records'
     
@@ -235,8 +282,8 @@ class SearchMatchEndpointTestCase(TestCase):
         response = self.client.get(url, follow=True)
         self.assertEquals(response.status_code, 200)
         self.assertJSONContentType(response)
-        self.assertEquals(response.json()['results'][0]['title'], 'Match title 1')
-        self.assertEquals(response.json()['results'][1]['title'], 'Match title 0')
+        self.assertEquals(response.json()['results'][0]['match']['title'], 'Match title 1')
+        self.assertEquals(response.json()['results'][1]['match']['title'], 'Match title 0')
 
     def _create_test_user(self):
         return User.objects.create_user(username='whatever', email='whatever@gmail.com', password='1234')
