@@ -81,10 +81,10 @@ jobs:
             git push --tags by-token
   
   conventional-commit-lint:
-    environment:
-      MSG_FILE: /tmp/commit-message-file
     docker:
       - image: circleci/python:3.7
+    environment:
+      MSG_FILE: /tmp/commit-message-file
     steps:
       - checkout
       - run: 
@@ -168,6 +168,8 @@ jobs:
   update-applada-api-repository:
     docker:
       - image: google/cloud-sdk
+    environment:
+      SSH_CONNECT_TIMEOUT: 60
     steps: 
       - run: &login_gcloud
           name: Login into Google Cloud
@@ -188,11 +190,11 @@ jobs:
             - "3b:20:f6:44:d6:ca:b2:bf:70:5b:fd:76:89:fd:17:58"
       - run: &ssh_add_debug_to_known_hosts
           name: Add Debug instance to SSH Known Hosts
-          command: ssh-keyscan $DEBUG_INSTANCE_EXTERNAL_IP >> ~/.ssh/known_hosts 
+          command: ssh-keyscan $DEBUG_INSTANCE_EXTERNAL_IP >> ~/.ssh/known_hosts
       - run:
           name: Fetch updates into remote git repository
           command: |
-            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP \
+            ssh -o ConnectTimeout=$SSH_CONNECT_TIMEOUT $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP \
             git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR fetch origin
       - run:
           name: Pull updates into development branch
@@ -210,6 +212,8 @@ jobs:
   restart-applada-api-debug:
     docker:
       - image: google/cloud-sdk
+    environment:
+      SSH_CONNECT_TIMEOUT: 60
     steps:
       - run:
           <<: *login_gcloud
@@ -225,7 +229,7 @@ jobs:
       - run:
           name: Changing current branch to 'development'
           command: |
-            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
+            ssh -o ConnectTimeout=$SSH_CONNECT_TIMEOUT $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
             git --git-dir $DEBUG_INSTANCE_REPOSITORY_DIR/.git --work-tree $DEBUG_INSTANCE_REPOSITORY_DIR checkout development
             EOF
       - run:
@@ -240,6 +244,8 @@ jobs:
   rolling-out-api-release:
     docker:
       - image: google/cloud-sdk
+    environment:
+      SSH_CONNECT_TIMEOUT: 60
     steps:
       - run:
           <<: *login_gcloud
@@ -261,7 +267,7 @@ jobs:
       - run:
           name: Recreate AppLada Release container
           command: |
-            ssh $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
+            ssh -o ConnectTimeout=$SSH_CONNECT_TIMEOUT $DEBUG_INSTANCE_USER@$DEBUG_INSTANCE_EXTERNAL_IP /bin/bash << EOF
             docker-compose -f $DEBUG_INSTANCE_REPOSITORY_DIR/docker-compose.yml \
             --env-file $DEBUG_INSTANCE_REPOSITORY_DIR/.env \
             up -d --remove-orphans --force-recreate --no-deps $RELEASE_CONTAINER_NAME
