@@ -179,7 +179,9 @@ jobs:
             gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
       - run: &start_debug_instance
           name: Starting Debug instance
-          command: gcloud compute instances start $DEBUG_INSTANCE_NAME
+          command: |
+            gcloud compute instances start $DEBUG_INSTANCE_NAME
+            sleep 60
       - run: &get_debug_instance_ip
           name: Getting Debug instance External IP
           command: |
