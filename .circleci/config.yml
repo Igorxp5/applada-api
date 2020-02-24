@@ -37,6 +37,15 @@ jobs:
             chmod +x /bin/semver
       - checkout
       - run:
+          name: Checking if the current commit has already a tag
+          command: |
+            if [ "$CIRCLE_BRANCH" = "development" ]; then
+              if git describe --contains $CIRCLE_SHA1; then
+                echo "This commit has already a version tag"
+                circleci-agent step halt
+              fi;
+            fi;
+      - run:
           name: 'Getting commit type'
           command: |
             export COMMIT_MESSAGE=$(git show --pretty='format:%s' --no-patch $CIRCLE_SHA1)
