@@ -95,7 +95,7 @@ class UserEndpointTestCase(TestCase):
                                      {'old_password': password, 'password': new_password}, 
                                      format='json', follow=True)
         self.assertEquals(response.status_code, 200)
-        self.assertJSONContains(response, {'username', 'name', 'level', 'registred_date'})
+        self.assertJSONContains(response, {'username', 'name', 'email', 'level', 'registred_date'})
         
         sign_response = self.client.post(f'{URL_PREFFIX}/sign-in', 
                                      {'username': test_user.username, 'password': new_password}, 
@@ -110,13 +110,22 @@ class UserEndpointTestCase(TestCase):
         self.assertJSONEqual(response, {'errors': ['Authentication credentials were not provided.']})
 
     def test_get_user_by_username(self):
-        """GET /users/{username}: Get a user should return only public data about the user"""
+        """GET /users/{username}: Get own user should return username, name, email, level and registred date"""
         test_user = self._create_test_user()
         self.client.force_authenticate(user=test_user)
         response = self.client.get(f'{URL_PREFFIX}/users/{test_user.username}', follow=True)
         self.assertEquals(response.status_code, 200)
-        self.assertJSONContains(response, {'username', 'name', 'level', 'registred_date'})
+        self.assertJSONContains(response, {'username', 'name', 'email', 'level', 'registred_date'})
         self.assertEquals(response.json()['username'], test_user.username)
+
+    def test_get_other_user(self):
+        """GET /users/{username}: Get other user profile should not return email, just: username, name, level an registred date"""
+        test_user = self._create_test_user()
+        other_user = User.objects.create_user(username='other', email='other@gmail.com', password='1234')
+        self.client.force_authenticate(user=test_user)
+        response = self.client.get(f'{URL_PREFFIX}/users/{other_user.username}', follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertJSONContains(response, {'username', 'name', 'level', 'registred_date'})
 
     def test_user_not_found(self):
         """GET /users/{username}: Get a user who does not exist should return 404 response code and appropriate error message"""
