@@ -1,4 +1,4 @@
-defaultEntryPoints = ["http"]
+defaultEntryPoints = ["http", "https"]
 logLevel = "DEBUG"
 
 [api]
@@ -7,8 +7,20 @@ address = ":8080"
 [entryPoints]
     [entryPoints.http]
         address = ":80"
+    [entryPoints.https]
+        address = ":443"
+        [entryPoints.https.tls]
+            [[entryPoints.https.tls.certificates]]
+            certFile = "/certs/AppLada_Certificate.pem"
+            keyFile = "/certs/AppLada_Certificate.key"
     [entryPoints.postgres]
         address = ":5432"
+
+[tls.stores]
+  [tls.stores.default]
+    [tls.stores.default.defaultCertificate]
+      certFile = "/certs/AppLada_Certificate.pem"
+      keyFile  = "/certs/AppLada_Certificate.key"
 
 [retry]
 attempts = 3
