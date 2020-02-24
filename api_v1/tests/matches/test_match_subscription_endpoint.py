@@ -19,7 +19,7 @@ class MatchSubscriptionEndpointTestCase(TestCase):
     """Match Subscription Endpoint"""
     expected_structure = {
         'match_id': None,
-        'user': {'username': None, 'name': None,
+        'user': {'username': None, 'name': None, 'email': None,
                  'level': None,'registred_date': None
         },
         'date': None

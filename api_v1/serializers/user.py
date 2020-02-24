@@ -15,14 +15,16 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('username', 'name', 'email', 'level', 'registred_date', 'old_password', 'password')
         read_only_fields = ('level',)
-        extra_kwargs = {
-            'email': {'write_only': True}
-        }
     
     def get_fields(self, *args, **kwargs):
         fields = super().get_fields(*args, **kwargs)
         request = self.context.get('request')
-        if request and request.method == 'POST':
+        
+        if request and request.method == 'GET':
+            # If the get user is not own request user, remove email from fields
+            if self.instance and self.instance != request.user:
+                del fields['email']
+        elif request and request.method == 'POST':
             fields['username'].required = True
             fields['password'].required = True
         elif request and request.method in ['PUT', 'PATCH']:
